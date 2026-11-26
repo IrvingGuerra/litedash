@@ -1,7 +1,6 @@
 package com.irvingguerra.litedash
 
 import androidx.compose.ui.graphics.toArgb
-import com.irvingguerra.litedash.core.ui.CardEdge
 import com.irvingguerra.litedash.core.ui.CardStyle
 import com.irvingguerra.litedash.core.ui.MIN_OPACITY
 import com.irvingguerra.litedash.feature.car.CarColors
@@ -22,10 +21,10 @@ import org.junit.Test
 
 class DesignsTest {
     /** Lo de fábrica de toda la app (lo de una instalación nueva). */
-    private val factory = DesignLook(ThemeMode.DARK, null, null, CardStyle.GLASS, MIN_OPACITY, CardEdge.NONE, null, BarStyle.FLOATING, CarColors[0].toArgb())
+    private val factory = DesignLook(ThemeMode.DARK, null, null, CardStyle.GLASS, MIN_OPACITY, null, BarStyle.FLOATING, CarColors[0].toArgb())
 
     /** Lo de alguien que ya personalizó todo. */
-    private val mine = DesignLook(ThemeMode.LIGHT, 0xFF30D158.toInt(), 0xFF1F4FD8.toInt(), CardStyle.GLASS, 0.8f, CardEdge.BOLD, "orientation=heading;zoom=mid;flow=off", BarStyle.FULL, 0xFF123456.toInt())
+    private val mine = DesignLook(ThemeMode.LIGHT, 0xFF30D158.toInt(), 0xFF1F4FD8.toInt(), CardStyle.GLASS, 0.8f, "orientation=heading;zoom=mid;flow=off", BarStyle.FULL, 0xFF123456.toInt())
 
     @Test
     fun eightDesignsWithTheirOwnLayoutsAndGraphiteFirst() {
@@ -69,7 +68,6 @@ class DesignsTest {
         assertEquals(ThemeMode.DARK, after.theme)
         assertEquals(0xFFFF453A.toInt(), after.accent)
         assertNull(after.cards)
-        assertEquals(CardEdge.NONE, after.cardEdge)
         // Del mapa solo la paleta y el estilo; la orientación, el zoom y la ruta quieta se quedan.
         val map = MapLook.parse(after.mapLook!!)
         // Pista: el mapa grafito de su galería.

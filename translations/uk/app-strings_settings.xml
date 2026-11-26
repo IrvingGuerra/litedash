@@ -12,10 +12,6 @@
     <string name="cards_glass">Скло</string>
     <string name="cards_opacity">Наскільки видно</string>
     <string name="cards_glass_help">Шпалери видно розмитими за кожною карткою; поверх мапи на тлі мапу видно приглушеною.</string>
-    <string name="cards_edge">Світлова кромка</string>
-    <string name="cards_edge_none">Немає</string>
-    <string name="cards_edge_thin">Тонка</string>
-    <string name="cards_edge_bold">Чітка</string>
     <string name="cards_themes">Поєднання</string>
     <string name="language_search">Знайди свою мову</string>
     <string name="language_not_found">Цієї мови ще немає. Допоможи перекласти на litedash.dev/translate.</string>

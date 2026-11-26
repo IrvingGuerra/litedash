@@ -11,7 +11,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import com.irvingguerra.litedash.core.ui.CardEdge
 import com.irvingguerra.litedash.core.ui.CardStyle
 import com.irvingguerra.litedash.core.ui.MIN_OPACITY
 import com.irvingguerra.litedash.feature.dashboard.PageBackground
@@ -42,7 +41,6 @@ class Design(
     val carColor: Color,
     val cardStyle: CardStyle = CardStyle.GLASS,
     val cardOpacity: Float = glass(0f),
-    val cardEdge: CardEdge = CardEdge.NONE,
     val cardColor: Color? = null,
     val accent: Color? = null,
     val mapPalette: MapPalettes = MapPalettes.FACTORY,
@@ -63,7 +61,7 @@ val DESIGNS = listOf(
     ),
     Design(
         "cloud", R.string.design_cloud, R.string.design_cloud_tagline, Template.DESIGN_CLOUD, ThemeMode.LIGHT,
-        wallpaper = "nube-perla", carColor = Color(0xFFF4F6F8), cardOpacity = glass(0.4f), accent = Color(0xFFFF9F0A),
+        wallpaper = "nube-perla", carColor = Color(0xFFF4F6F8), cardOpacity = glass(0.2f), accent = Color(0xFFFF9F0A),
     ),
     Design(
         "track", R.string.design_track, R.string.design_track_tagline, Template.DESIGN_TRACK, ThemeMode.DARK,
@@ -112,7 +110,6 @@ data class DesignLook(
     val cards: Int?,
     val cardStyle: CardStyle,
     val cardOpacity: Float,
-    val cardEdge: CardEdge,
     /** El aspecto del mapa ([MapLook.encode]); null = el de fábrica. */
     val mapLook: String?,
     val barStyle: BarStyle,
@@ -120,7 +117,7 @@ data class DesignLook(
 )
 
 val Preferences.look
-    get() = DesignLook(theme, accentColor?.toArgb(), cardColor?.toArgb(), cardStyle, cardOpacity, cardEdge, mapLook, barStyle, carColor.toArgb())
+    get() = DesignLook(theme, accentColor?.toArgb(), cardColor?.toArgb(), cardStyle, cardOpacity, mapLook, barStyle, carColor.toArgb())
 
 fun Preferences.put(l: DesignLook) {
     theme = l.theme
@@ -128,7 +125,6 @@ fun Preferences.put(l: DesignLook) {
     cardColor = l.cards?.let { Color(it) }
     cardStyle = l.cardStyle
     cardOpacity = l.cardOpacity
-    cardEdge = l.cardEdge
     mapLook = l.mapLook
     barStyle = l.barStyle
     if (carColor.toArgb() != l.carColor) carColor = Color(l.carColor)
@@ -146,7 +142,6 @@ fun Design.over(now: DesignLook, ownCar: Boolean, keepSun: Boolean = true) = now
     cards = cardColor?.toArgb(),
     cardStyle = cardStyle,
     cardOpacity = cardOpacity,
-    cardEdge = cardEdge,
     mapLook = MapLook.parse(now.mapLook.orEmpty()).let { it.copy(style = mapStyle, palette = mapPalette, custom = mapColor ?: it.custom) }.encode().ifEmpty { null },
     barStyle = barStyle,
     carColor = if (ownCar) now.carColor else carColor.toArgb(),
@@ -176,7 +171,6 @@ internal data class DesignUndo(
         putOpt("cards", look.cards)
         put("cardStyle", look.cardStyle.stored)
         put("cardOpacity", look.cardOpacity.toDouble())
-        put("cardEdge", look.cardEdge.stored)
         putOpt("mapLook", look.mapLook)
         put("barStyle", look.barStyle.stored)
         put("carColor", look.carColor)
@@ -202,7 +196,6 @@ internal data class DesignUndo(
                     cards = o.optIntOrNull("cards"),
                     cardStyle = CardStyle.fromStored(o.getString("cardStyle")),
                     cardOpacity = o.getDouble("cardOpacity").toFloat(),
-                    cardEdge = CardEdge.fromStored(o.getString("cardEdge")),
                     mapLook = o.optStringOrNull("mapLook"),
                     barStyle = BarStyle.fromStored(o.getString("barStyle")),
                     carColor = o.getInt("carColor"),

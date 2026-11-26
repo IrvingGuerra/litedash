@@ -14,10 +14,6 @@
     <string name="cards_glass">Verre</string>
     <string name="cards_opacity">Visibilité</string>
     <string name="cards_glass_help">Votre fond d\'écran apparaît flou derrière chaque carte ; sur un fond de carte, la carte apparaît atténuée.</string>
-    <string name="cards_edge">Liseré lumineux</string>
-    <string name="cards_edge_none">Aucun</string>
-    <string name="cards_edge_thin">Fin</string>
-    <string name="cards_edge_bold">Marqué</string>
     <string name="cards_themes">Combinaisons</string>
     <string name="language_search">Trouvez votre langue</string>
     <string name="language_not_found">Cette langue n\'est pas encore là. Aidez-nous à la traduire sur litedash.dev/translate.</string>

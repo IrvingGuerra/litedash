@@ -4,7 +4,6 @@ import android.app.ActivityManager
 import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,10 +30,13 @@ import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
+import kotlin.math.PI
+import kotlin.math.atan2
 
 /** Cómo se rellenan las tarjetas de toda la app: lisas o de vidrio (lo de fábrica). */
 enum class CardStyle(val stored: String) {
@@ -43,15 +45,6 @@ enum class CardStyle(val stored: String) {
     companion object {
         /** Sin elegir, de vidrio; también quien tenía las translúcidas (ya no existen). */
         fun fromStored(value: String?) = if (value == SOLID.stored) SOLID else GLASS
-    }
-}
-
-/** El filo de luz en la orilla de una tarjeta de vidrio: sin él (lo de fábrica), delgado o marcado (con canto). */
-enum class CardEdge(val stored: String) {
-    NONE("none"), THIN("thin"), BOLD("bold");
-
-    companion object {
-        fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: NONE
     }
 }
 
@@ -79,8 +72,6 @@ class CardLook(
      * lienzo. No sobre el mapa de fondo, que se mueve y no se desenfoca: ahí va ahumado ([smokeAlpha]).
      */
     val clear: Boolean = true,
-    /** De vidrio, su filo de luz. */
-    val edge: CardEdge = CardEdge.NONE,
 )
 
 // Dinámico: al arrastrar la opacidad solo se redibujan las tarjetas, no toda la app.
@@ -180,7 +171,7 @@ fun contentColors(c: Colors, look: CardLook, plain: Boolean): Colors = when {
 
 /**
  * Una superficie con la piel [look] y la forma [shape] (ya recortada por quien la llama): de vidrio, tu fondo
- * desenfocado detrás (si el inicio lo puso), el relleno translúcido, su brillo, su reflejo y su filo ([CardLook.edge]).
+ * desenfocado detrás (si el inicio lo puso), el relleno translúcido y la luz del cristal ([liquidGlass]).
  * [floor] = lo menos que se ve una flotante (la barra), que va sobre cualquier cosa.
  */
 fun Modifier.skinSurface(look: CardLook, c: Colors, shape: Shape, floor: Float = 0f): Modifier {
@@ -189,39 +180,55 @@ fun Modifier.skinSurface(look: CardLook, c: Colors, shape: Shape, floor: Float =
     if (!glass) return m.background(c.surface)
     if (look.backdrop != null) m = m.blurredBackdrop(look.backdrop)
     val fill = glassFill(look, floor)
-    // Cristal líquido: la escarcha, el color de la tarjeta que se haya pedido, un brillo arriba, un reflejo en diagonal
-    // (una franja de luz quieta, que se va conforme la tarjeta se llena) y, si se pide, el filo de luz. Sobre el mapa
-    // de fondo, el mismo cristal pero ahumado con el color del fondo, que se vuelve el de la tarjeta conforme se llena.
+    // Sobre el mapa de fondo, el mismo cristal pero ahumado con el color del fondo, que se vuelve el de la tarjeta
+    // conforme se llena.
     val tint = if (look.clear) c.surface.copy(alpha = fill) else lerp(c.background.copy(alpha = smokeAlpha(c)), c.surface, fill)
     val through = 1f - fill
-    m = m.background(Color.White.copy(alpha = frost(c.dark) * through))
+    return m.background(Color.White.copy(alpha = frost(c.dark) * through))
         .background(tint)
-        .background(Brush.verticalGradient(0f to Color.White.copy(alpha = if (c.dark) 0.1f else 0.25f), 0.55f to Color.Transparent))
-    // Solo sobre tu fondo (el inicio): en Ajustes y paneles, con muchas tarjetas en lista, estorbaría.
-    if (look.clear && look.backdrop != null) {
-        val shine = (if (c.dark) REFLECTION_DARK else REFLECTION_LIGHT) * through
-        m = m.background(
-            Brush.linearGradient(
-                0.18f to Color.Transparent, 0.3f to Color.White.copy(alpha = shine), 0.42f to Color.White.copy(alpha = shine * 0.2f), 0.55f to Color.Transparent,
-                start = Offset.Zero, end = Offset.Infinite,
-            ),
-        )
-    }
-    return m.glassEdge(look.edge, c.dark, shape)
+        .liquidGlass(c.dark, shape, through, lit = look.clear && look.backdrop != null)
 }
 
 /**
- * El filo de luz: nace en la esquina de arriba (más fuerte ahí, casi nada al centro). Delgado, una línea a media
- * fuerza; marcado, la línea entera y un canto ancho y suave por dentro, que le da grosor al cristal.
+ * La luz de un cristal líquido, dibujada una vez por tamaño: la luz que le cae de arriba, el grosor del vidrio (una
+ * banda suave por dentro de la orilla, clara arriba y en sombra abajo) y el brillo fino de la orilla, que destella en
+ * la esquina de arriba a la izquierda y en la de abajo a la derecha y casi se apaga entre ellas. Todo se va conforme
+ * la tarjeta se llena ([through] = cuánto queda de cristal). [lit] = sobre tu fondo (el inicio): en Ajustes y
+ * paneles, con muchas tarjetas en lista, va a media fuerza.
  */
-private fun Modifier.glassEdge(edge: CardEdge, dark: Boolean, shape: Shape): Modifier {
-    if (edge == CardEdge.NONE) return this
-    val stops = if (dark) GLASS_EDGE_DARK else GLASS_EDGE_LIGHT
-    val k = if (edge == CardEdge.THIN) 0.5f else 1f
-    val line = border(1.dp, Brush.linearGradient(stops.map { Color.White.copy(alpha = it * k) }), shape)
-    if (edge == CardEdge.THIN) return line
-    return border(BEVEL, Brush.linearGradient(0f to Color.White.copy(alpha = 0.22f), 0.4f to Color.Transparent, 0.75f to Color.Transparent, 1f to Color.White.copy(alpha = 0.1f)), shape)
-        .then(line)
+private fun Modifier.liquidGlass(dark: Boolean, shape: Shape, through: Float, lit: Boolean): Modifier = drawWithCache {
+    val k = through * (if (lit) 1f else 0.5f)
+    val outline = shape.createOutline(size, layoutDirection, this)
+    fun white(a: Float) = Color.White.copy(alpha = (a * k).coerceIn(0f, 1f))
+    fun black(a: Float) = Color.Black.copy(alpha = (a * k).coerceIn(0f, 1f))
+    val light = Brush.verticalGradient(
+        0f to white(if (dark) 0.1f else 0.28f), 0.55f to Color.Transparent, 1f to (if (dark) black(0.1f) else Color.Transparent),
+    )
+    // Cada banda lleva una fracción: sumadas dan un degradado hacia la orilla sin escalones a la vista.
+    val part = 1f / GLASS_DEPTH_STEPS
+    val depth = Brush.verticalGradient(
+        0f to white((if (dark) 0.14f else 0.5f) * part), 0.5f to Color.Transparent,
+        1f to (if (dark) white(0.06f * part) else black(0.11f * part)),
+    )
+    // El destello va por ángulo desde el centro, con las dos esquinas donde de verdad están (0 = a la derecha, en
+    // el sentido del reloj): así una tarjeta muy ancha no lleva media orilla encendida.
+    val turn = (atan2(size.height, size.width) / (2 * PI)).toFloat().coerceIn(0.02f, 0.2f)
+    val strong = white(if (dark) 0.7f else 1f)
+    val second = white(if (dark) 0.42f else 0.95f)
+    val faint = white(if (dark) 0.06f else 0.3f)
+    val soft = white(if (dark) 0.16f else 0.55f)
+    val rim = Brush.sweepGradient(
+        0f to faint, turn to second, (turn + 0.25f) / 2 + 0.02f to faint, 0.25f to faint, 0.5f to soft,
+        0.5f + turn to strong, 0.75f to soft, 1f to faint,
+    )
+    // Los trazos van centrados en la orilla: la mitad de afuera la recorta la tarjeta.
+    val bands = List(GLASS_DEPTH_STEPS) { Stroke(GLASS_DEPTH.toPx() * 2 * (it + 1) / GLASS_DEPTH_STEPS) }
+    val line = Stroke(GLASS_RIM.toPx() * 2)
+    onDrawBehind {
+        drawRect(light)
+        for (b in bands) drawOutline(outline, depth, style = b)
+        drawOutline(outline, rim, style = line)
+    }
 }
 
 /**
@@ -237,12 +244,14 @@ fun Modifier.glassShadow(look: CardLook, dark: Boolean, radius: Dp, cheap: Boole
         val rings = if (cheap) 1 else SHADOW_RINGS
         val ring = SHADOW_SPREAD.toPx() / rings
         val drop = SHADOW_DROP.toPx()
-        val strength = (if (dark) 0.2f else 0.09f) * (if (cheap) 0.6f else 1f)
+        // Nace metida bajo la tarjeta: arriba y a los lados casi no asoma, cae hacia abajo.
+        val inset = SHADOW_INSET.toPx()
+        val strength = (if (dark) 0.14f else 0.03f) * (if (cheap) 0.6f else 1f)
         val stroke = Stroke(ring + 1f)
         val shapes = List(rings) { i ->
-            val out = ring * (i + 0.5f)
+            val out = ring * (i + 0.5f) - inset
             val fade = 1f - i / rings.toFloat()
-            ShadowRing(Color.Black.copy(alpha = strength * fade * fade), Offset(-out, -out + drop), Size(size.width + 2 * out, size.height + 2 * out), CornerRadius(r + out))
+            ShadowRing(Color.Black.copy(alpha = strength * fade * fade), Offset(-out, -out + drop), Size(size.width + 2 * out, size.height + 2 * out), CornerRadius((r + out).coerceAtLeast(0f)))
         }
         onDrawBehind { for (s in shapes) drawRoundRect(s.color, s.at, s.size, s.corner, style = stroke) }
     }
@@ -386,18 +395,16 @@ private const val VEIL_MAX = 0.9f
 private const val PLAIN_CONTRAST = 3f
 /** Puntos por lado con que se saca el color medio de tu fondo. */
 private const val MEAN_SAMPLES = 64
-/** El filo del cristal (blanco, de la esquina de arriba a la de abajo): tema oscuro y tema claro. */
-private val GLASS_EDGE_DARK = listOf(0.7f, 0.1f, 0.3f)
-private val GLASS_EDGE_LIGHT = listOf(1f, 0.3f, 0.55f)
-/** El canto del filo marcado. */
-private val BEVEL = 4.dp
-/** Lo más fuerte del reflejo en diagonal (blanco): tema oscuro y tema claro. */
-private const val REFLECTION_DARK = 0.13f
-private const val REFLECTION_LIGHT = 0.3f
+/** El grosor del cristal: hasta dónde entra desde la orilla y en cuántas bandas se dibuja. */
+private val GLASS_DEPTH = 12.dp
+private const val GLASS_DEPTH_STEPS = 8
+/** El brillo fino de la orilla del cristal. */
+private val GLASS_RIM = 1.dp
 /** La sombra del cristal: hasta dónde llega, en cuántos aros y cuánto cae. */
-private val SHADOW_SPREAD = 14.dp
-private const val SHADOW_RINGS = 7
-private val SHADOW_DROP = 4.dp
+private val SHADOW_SPREAD = 24.dp
+private const val SHADOW_RINGS = 16
+private val SHADOW_DROP = 9.dp
+private val SHADOW_INSET = 6.dp
 /**
  * De lo que se oscurece tu fondo en el inicio, cuánto lleva detrás de un cristal: adentro se ve más claro y vivo que
  * afuera (la luz «atrapada» es lo que lo hace parecer vidrio). Si el texto no se leería, [glassVeil] lo cierra igual.

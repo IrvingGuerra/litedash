@@ -12,10 +12,6 @@
     <string name="cards_glass">Cam</string>
     <string name="cards_opacity">Görünürlük</string>
     <string name="cards_glass_help">Duvar kağıdınız her kartın arkasında bulanık görünür; harita arka planında harita soluk görünür.</string>
-    <string name="cards_edge">Işık kenarı</string>
-    <string name="cards_edge_none">Yok</string>
-    <string name="cards_edge_thin">İnce</string>
-    <string name="cards_edge_bold">Belirgin</string>
     <string name="cards_themes">Kombinasyonlar</string>
     <string name="language_search">Dilinizi arayın</string>
     <string name="language_not_found">Bu dil henüz yok. litedash.dev/translate adresinde çevirmemize yardım edin.</string>

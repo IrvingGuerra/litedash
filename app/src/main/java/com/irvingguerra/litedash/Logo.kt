@@ -626,7 +626,7 @@ private const val CANVAS_VEIL = 0.62f
 internal fun globalLook(look: CardLook): CardLook {
     if (look.backdrop == null && look.clear) return look
     lastGlobal?.let { (from, to) -> if (from === look) return to }
-    return CardLook(look.style, look.opacity, edge = look.edge).also { lastGlobal = look to it }
+    return CardLook(look.style, look.opacity).also { lastGlobal = look to it }
 }
 
 private var lastGlobal: Pair<CardLook, CardLook>? = null

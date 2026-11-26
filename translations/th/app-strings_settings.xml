@@ -12,10 +12,6 @@
     <string name="cards_glass">กระจก</string>
     <string name="cards_opacity">ความชัด</string>
     <string name="cards_glass_help">วอลเปเปอร์ของคุณจะเห็นเป็นภาพเบลออยู่หลังการ์ดแต่ละใบ บนพื้นหลังแผนที่ แผนที่จะดูจางลง</string>
-    <string name="cards_edge">ขอบแสง</string>
-    <string name="cards_edge_none">ไม่มี</string>
-    <string name="cards_edge_thin">บาง</string>
-    <string name="cards_edge_bold">ชัด</string>
     <string name="cards_themes">ชุดสี</string>
     <string name="language_search">ค้นหาภาษาของคุณ</string>
     <string name="language_not_found">ยังไม่มีภาษานี้ ช่วยเราแปลได้ที่ litedash.dev/translate</string>

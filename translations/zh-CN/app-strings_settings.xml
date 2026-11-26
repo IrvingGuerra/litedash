@@ -12,10 +12,6 @@
     <string name="cards_glass">玻璃</string>
     <string name="cards_opacity">可见度</string>
     <string name="cards_glass_help">你的壁纸会模糊地显示在每张卡片后面；在地图背景上，地图会调暗显示。</string>
-    <string name="cards_edge">光边</string>
-    <string name="cards_edge_none">无</string>
-    <string name="cards_edge_thin">细</string>
-    <string name="cards_edge_bold">粗</string>
     <string name="cards_themes">搭配</string>
     <string name="language_search">查找你的语言</string>
     <string name="language_not_found">暂时还没有这种语言。欢迎在 litedash.dev/translate 帮我们翻译。</string>
