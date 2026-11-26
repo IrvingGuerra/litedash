@@ -4,6 +4,19 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.26] - 2026-11-26
+
+Regresan las Plantillas, menos Diseños y fondos mucho más limpios.
+
+### Nuevo
+- **Regresan las Plantillas** (al acomodar el inicio y en Ajustes → Inicio y apariencia → Inicio): cambian solo la
+  distribución de la página, dentro del tema que tengas; no tocan colores, fondo ni auto.
+
+### Cambiado
+- **Quedan 5 Diseños:** Grafito, Nube, Pista, Ruta y Neón. Si tenías Columna, Arena o Bosque, tu inicio se queda igual.
+- **Fondos de los Diseños más limpios:** se rehicieron sin grano y más nítidos, y LiteDash ahora los muestra a color
+  completo (antes se veían con puntitos o bandas). Si ya tenías un Diseño puesto, su fondo se actualiza solo.
+
 ## [1.5.25] - 2026-11-26
 
 El Bluetooth de fábrica suena solo en más casos, y una forma de ayudarnos a agregar tu pantalla.

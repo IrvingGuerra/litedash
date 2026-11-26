@@ -3,6 +3,20 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.26] - 2026-11-26
+
+Layouts are back, fewer Designs and much cleaner wallpapers.
+
+### New
+- **Layouts are back** (when arranging the home screen and in Settings → Home & look → Home): they only change how the
+  page is laid out, within the theme you have; they don't touch colors, wallpaper or car.
+
+### Changed
+- **5 Designs remain:** Graphite, Cloud, Track, Route and Neon. If you had Column, Sand or Forest, your home screen stays
+  as it is.
+- **Cleaner Design wallpapers:** redone with no grain and sharper, and LiteDash now shows them in full color (they used
+  to show dots or bands). If you already had a Design applied, its wallpaper updates by itself.
+
 ## [1.5.25] - 2026-11-26
 
 Factory Bluetooth plays by itself in more cases, and a way to help us add your head unit.
