@@ -24,6 +24,7 @@
     <string name="phone_step_install">Установи LiteDash Connect и создай аккаунт</string>
     <string name="phone_step_tap">Нажми «Привязать экран»</string>
     <string name="phone_step_scan">Наведи камеру на этот код</string>
+    <string name="phone_type_code">Нет камеры? В LiteDash Connect нажми «Type a code» и введи %1$s</string>
     <string name="phone_connected">Подключено</string>
     <string name="phone_searching">Ищем телефон…</string>
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>

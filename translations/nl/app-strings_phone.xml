@@ -22,6 +22,7 @@
     <string name="phone_step_install">Installeer LiteDash Connect en maak je account aan</string>
     <string name="phone_step_tap">Tik op “Mijn scherm koppelen”</string>
     <string name="phone_step_scan">Richt de camera op deze code</string>
+    <string name="phone_type_code">Geen camera? Tik in LiteDash Connect op “Type a code” en voer %1$s in</string>
     <string name="phone_connected">Verbonden</string>
     <string name="phone_searching">Je telefoon zoeken…</string>
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>

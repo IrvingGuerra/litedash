@@ -24,6 +24,7 @@
     <string name="phone_step_install">Nainstaluj LiteDash Connect a vytvoř si účet</string>
     <string name="phone_step_tap">Klepni na „Propojit můj displej“</string>
     <string name="phone_step_scan">Namiř fotoaparát na tento kód</string>
+    <string name="phone_type_code">Bez fotoaparátu? V LiteDash Connect klepni na „Type a code“ a zadej %1$s</string>
     <string name="phone_connected">Připojeno</string>
     <string name="phone_searching">Hledám tvůj telefon…</string>
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>

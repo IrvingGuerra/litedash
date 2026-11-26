@@ -23,6 +23,7 @@
     <string name="phone_step_install">Instalează LiteDash Connect și creează-ți contul</string>
     <string name="phone_step_tap">Atinge „Conectează ecranul”</string>
     <string name="phone_step_scan">Îndreaptă camera spre acest cod</string>
+    <string name="phone_type_code">Nu ai cameră? În LiteDash Connect atinge „Type a code” și introdu %1$s</string>
     <string name="phone_connected">Conectat</string>
     <string name="phone_searching">Se caută telefonul…</string>
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>

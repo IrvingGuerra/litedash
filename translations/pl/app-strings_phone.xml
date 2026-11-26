@@ -24,6 +24,7 @@
     <string name="phone_step_install">Zainstaluj LiteDash Connect i załóż konto</string>
     <string name="phone_step_tap">Dotknij „Połącz mój ekran”</string>
     <string name="phone_step_scan">Skieruj aparat na ten kod</string>
+    <string name="phone_type_code">Brak aparatu? W LiteDash Connect dotknij „Type a code” i wpisz %1$s</string>
     <string name="phone_connected">Połączono</string>
     <string name="phone_searching">Szukanie telefonu…</string>
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>

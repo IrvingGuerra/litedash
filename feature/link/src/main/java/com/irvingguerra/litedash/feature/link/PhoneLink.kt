@@ -59,8 +59,11 @@ class ScreenCar(
     val image: String,
 )
 
-/** Lo que se dibuja para vincular: el texto del QR y el código de 4 dígitos de esa llave. */
-class Pairing(val text: String, val code: String)
+/**
+ * Lo que se dibuja para vincular: el texto del QR, el código de 4 dígitos de esa llave (se compara con el del celular)
+ * y el código de 6 dígitos que se teclea en el celular cuando no se puede leer el QR ([pin], §2b).
+ */
+class Pairing(val text: String, val code: String, val pin: String)
 
 /**
  * Por dónde llega al auto el sonido del celular (mensaje `sound`, PROTOCOLO_LINK.md §5c): Bluetooth, Android
@@ -289,6 +292,9 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     /** La llave del QR: provisional hasta que un saludo con ella termine bien. */
     private var offered: ByteArray? = null
     private var offeredAt = 0L
+    /** El código que se teclea en el celular en vez de leer el QR, y cuántos intentos fallidos lleva. */
+    private var pin: String? = null
+    private var pinFails = 0
 
     private var attempt: Attempt? = null
     private var session: Session? = null
@@ -303,6 +309,8 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     private var beaconFresh = false
     /** La llave que el oído reconoce (la lee su hilo). */
     @Volatile private var earKey: ByteArray? = null
+    /** El oído también atiende a un celular que espera el código (sin vincular y con el panel abierto). */
+    @Volatile private var earPairing = false
 
     // Para el reporte.
     private var lastError: String? = null
@@ -470,11 +478,41 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         }
         val now = SystemClock.elapsedRealtime()
         if (offered != null && now - offeredAt < OFFER_MS) return
-        val key = ByteArray(LinkProtocol.KEY_BYTES).also(random::nextBytes)
+        offer(ByteArray(LinkProtocol.KEY_BYTES).also(random::nextBytes))
+    }
+
+    /** Pone [key] como la llave por vincular (la del QR), con un código nuevo para teclear. */
+    private fun offer(key: ByteArray) {
         offered = key
-        offeredAt = now
+        offeredAt = SystemClock.elapsedRealtime()
+        pinFails = 0
+        show(key, Spake2.newCode())
+    }
+
+    private fun show(key: ByteArray, code: String) {
+        pin = code
         val info = screen()
-        pairing = Pairing(LinkProtocol.qrText(screenId(), key, info.car, info.screen), LinkProtocol.code(key))
+        pairing = Pairing(LinkProtocol.qrText(screenId(), key, info.car, info.screen), LinkProtocol.code(key), code)
+    }
+
+    /**
+     * El celular tecleó bien el código (§2b): la llave que salió de ahí es ahora la del QR, y falta lo de siempre (que
+     * el usuario confirme en el celular y este conteste el saludo con ella).
+     */
+    private fun codePaired(from: Attempt, key: ByteArray, address: String) {
+        if (attempt !== from || paired) return
+        offer(key)
+        beaconed = address
+        sync()
+    }
+
+    /** Un intento con el código que no terminó bien: al tercero el código cambia (nadie lo adivina probando). */
+    private fun codeFailed(from: Attempt) {
+        if (attempt !== from || paired) return
+        val key = offered ?: return
+        if (++pinFails < PIN_TRIES) return
+        pinFails = 0
+        show(key, Spake2.newCode())
     }
 
     /** La identidad de esta pantalla: 8 bytes al azar, fijos desde la primera vez. */
@@ -504,6 +542,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
             }
         }
         earKey = currentKey()
+        earPairing = watching && !paired && offered != null
         listen(active && !connected && !earFailed)
     }
 
@@ -547,7 +586,8 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
                     val key = earKey ?: continue
                     val now = SystemClock.elapsedRealtime()
                     if (now - lastTold < BEACON_EVERY_MS) continue
-                    if (!LinkProtocol.isBeacon(key, String(packet.data, 0, packet.length, Charsets.US_ASCII))) continue
+                    val text = String(packet.data, 0, packet.length, Charsets.US_ASCII)
+                    if (!LinkProtocol.isBeacon(key, text) && !(earPairing && LinkProtocol.isPairingBeacon(text))) continue
                     val from = packet.address?.hostAddress ?: continue
                     lastTold = now
                     main.post { if (ear === this) heardBeacon(from) }
@@ -643,7 +683,8 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         val known = listOfNotNull(
             beaconed?.let { it to "faro" }, store.getString(LAST_ADDRESS, null)?.let { it to "última" },
         )
-        val next = Attempt(key, fresh = !store.contains(KEY), screenId(), screen(), known, sweep)
+        val fresh = !store.contains(KEY)
+        val next = Attempt(key, fresh, screenId(), screen(), known, sweep, pin.takeIf { fresh && watching })
         attempt = next
         Thread(next, "phone-link").start()
     }
@@ -675,6 +716,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         phoneName = null
         phoneApp = null
         offered = null
+        pin = null
         if (watching) refreshPairing()
         sync()
     }
@@ -752,6 +794,9 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     }
 
     /** Una conexión ya saludada: escribe de un mensaje a la vez (el contador del cifrado va en orden). */
+    /** El intento vinculó con el código: no hay canal todavía, el siguiente saludo ya usa la llave nueva. */
+    private class CodePaired : IOException("vinculado con el código")
+
     private class Session(private val socket: Socket, private val channel: SecureChannel) {
         private val output = socket.getOutputStream()
         private val writing = ReentrantLock()
@@ -808,6 +853,8 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         private val known: List<Pair<String, String>>,
         /** Si nadie contesta en las direcciones conocidas, tocar a los vecinos de las redes locales. */
         private val sweep: Boolean,
+        /** El código que se teclea en el celular, si este intento puede vincular con él (sin vincular y con el panel abierto). */
+        private val pin: String?,
     ) : Runnable {
         @Volatile var cancelled = false
         @Volatile private var socket: Socket? = null
@@ -863,7 +910,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
                 bind(open, host)
                 open.connect(InetSocketAddress(host, port), CONNECT_MS)
                 val reader = LineReader(BufferedInputStream(open.getInputStream()))
-                val channel = greet(open, reader)
+                val channel = greet(open, reader, address)
                 val ready = Session(open, channel)
                 ready.send(
                     JSONObject().put("t", "info").put("role", "screen").put("app", info.app).put("car", info.car)
@@ -873,6 +920,10 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
                 served = true
                 main.post { opened(this, ready, address, how) }
                 bye = serve(open, reader, channel, ready)
+                error = null
+            } catch (_: CodePaired) {
+                // Vinculado con el código: este intento termina aquí y el siguiente saluda con la llave nueva.
+                served = true
                 error = null
             } catch (e: Exception) {
                 // Nadie escucha en esa dirección: no es un error que contar, se prueba la siguiente.
@@ -942,13 +993,14 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         }
 
         /** El saludo: cada lado prueba que tiene la llave. Regresa el canal cifrado o lanza. */
-        private fun greet(open: Socket, reader: LineReader): SecureChannel {
+        private fun greet(open: Socket, reader: LineReader, address: String): SecureChannel {
             open.soTimeout = HELLO_MS
             val deadline = SystemClock.elapsedRealtime() + HELLO_MS
             val nc = ByteArray(LinkProtocol.NONCE_BYTES).also(random::nextBytes)
             writePlain(open, JSONObject().put("t", "hello").put("v", LinkProtocol.VERSION).put("id", id).put("nc", Base64.encode(nc)))
             val answer = JSONObject(reader.readLine(LinkProtocol.HELLO_LINE_MAX) ?: throw IOException("el celular no conoce esta pantalla"))
             if (answer.optString("t") == "error") throw IOException("el celular contestó: ${answer.optString("code")}")
+            if (answer.optString("t") == "pair" && pin != null) pairByCode(open, reader, answer, pin, address)
             if (answer.optString("t") != "hello" || answer.optInt("v") != LinkProtocol.VERSION) throw IOException("saludo desconocido")
             val ns = Base64.decode(answer.getString("ns"))
             if (ns.size != LinkProtocol.NONCE_BYTES) throw IOException("saludo desconocido")
@@ -956,6 +1008,37 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
             if (SystemClock.elapsedRealtime() > deadline) throw IOException("saludo lento")
             writePlain(open, JSONObject().put("t", "auth").put("mac", Base64.encode(LinkProtocol.screenMac(key, nc, ns))))
             return SecureChannel(LinkProtocol.screenToPhoneKey(key, nc, ns), LinkProtocol.phoneToScreenKey(key, nc, ns))
+        }
+
+        /**
+         * El celular espera el código en vez del QR (§2b): los dos sacan la misma llave del código con SPAKE2 y cada
+         * uno prueba que la tiene. Siempre termina lanzando: [CodePaired] si salió bien (la llave nueva ya va en camino
+         * al hilo principal) o el motivo si no (cuenta como un intento fallido del código).
+         */
+        private fun pairByCode(open: Socket, reader: LineReader, first: JSONObject, code: String, address: String): Nothing {
+            try {
+                if (first.optInt("v") != LinkProtocol.VERSION) throw IOException("saludo desconocido")
+                val side = Spake2(phone = false, Spake2.secretOf(code), LinkProtocol.PAIR_PHONE, id.toByteArray(Charsets.US_ASCII))
+                val car = LinkProtocol.pairLabel(info.car, car = true)
+                val screen = LinkProtocol.pairLabel(info.screen, car = false)
+                val keys = side.keys(Base64.decode(first.getString("pa")), LinkProtocol.pairBound(car, screen))
+                    ?: throw IOException("código: saludo inválido")
+                writePlain(
+                    open,
+                    JSONObject().put("t", "pair").put("pb", Base64.encode(side.share))
+                        .put("mac", Base64.encode(keys.screenProof)).put("n", car).put("s", screen),
+                )
+                val last = JSONObject(reader.readLine(LinkProtocol.HELLO_LINE_MAX) ?: throw IOException("el código no coincide"))
+                if (last.optString("t") != "pair" || !LinkProtocol.sameMac(keys.phoneProof, Base64.decode(last.getString("mac")))) {
+                    throw IOException("el código no coincide")
+                }
+                val key = Spake2.linkKey(keys.shared)
+                main.post { codePaired(this, key, address) }
+            } catch (e: Exception) {
+                main.post { codeFailed(this) }
+                throw if (e is IOException) e else IOException("código: ${e.message ?: e.javaClass.simpleName}")
+            }
+            throw CodePaired()
         }
 
         /**
@@ -1150,6 +1233,8 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
 
         /** Lo que vive la llave de un QR sin vincular (Ajustes → Celular lo dice). */
         const val OFFER_MS = 5 * 60_000L
+        /** Intentos fallidos con el código antes de cambiarlo. */
+        private const val PIN_TRIES = 3
         private const val WATCH_RETRY_MS = 2_000L
         private const val CONNECT_MS = 1_500
 

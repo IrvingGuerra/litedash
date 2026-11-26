@@ -22,6 +22,7 @@
     <string name="phone_step_install">LiteDash Connect’i yükleyin ve hesabınızı oluşturun</string>
     <string name="phone_step_tap">“Ekranımı bağla”ya dokunun</string>
     <string name="phone_step_scan">Kamerayı bu koda doğrultun</string>
+    <string name="phone_type_code">Kamera yok mu? LiteDash Connect’te “Type a code” seçeneğine dokunun ve %1$s kodunu girin</string>
     <string name="phone_connected">Bağlı</string>
     <string name="phone_searching">Telefonunuz aranıyor…</string>
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>

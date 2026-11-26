@@ -21,6 +21,7 @@
     <string name="phone_step_install">安装 LiteDash Connect 并创建账号</string>
     <string name="phone_step_tap">点按“关联我的屏幕”</string>
     <string name="phone_step_scan">用相机对准此代码</string>
+    <string name="phone_type_code">没有相机？在 LiteDash Connect 中点按“Type a code”，然后输入 %1$s</string>
     <string name="phone_connected">已连接</string>
     <string name="phone_searching">正在寻找你的手机…</string>
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>

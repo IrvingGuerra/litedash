@@ -179,20 +179,21 @@ private fun PairingCode(pairing: Pairing) {
         if (width >= SIDE_BY_SIDE) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(30.dp)) {
                 QrImage(pairing.text, QR_SIZE)
-                Steps(pairing.code, Modifier.weight(1f))
+                Steps(pairing, Modifier.weight(1f))
             }
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 QrImage(pairing.text, minOf(width, QR_SIZE), Modifier.align(Alignment.CenterHorizontally))
-                Steps(pairing.code, Modifier.fillMaxWidth())
+                Steps(pairing, Modifier.fillMaxWidth())
             }
         }
     }
 }
 
 @Composable
-private fun Steps(code: String, modifier: Modifier) {
+private fun Steps(pairing: Pairing, modifier: Modifier) {
     val c = LocalColors.current
+    val code = pairing.code
     Column(modifier) {
         StatusTitle(Mark.WARN, stringResource(R.string.phone_waiting))
         // Los dígitos separados: se comparan de un vistazo con los del celular.
@@ -205,6 +206,12 @@ private fun Steps(code: String, modifier: Modifier) {
                 Label(stringResource(step), Typography.body)
             }
         }
+        // Sin cámara en el celular: el mismo vínculo tecleando este código en Connect (tres y tres, se lee mejor).
+        Divider()
+        Label(
+            stringResource(R.string.phone_type_code, pairing.pin.chunked(3).joinToString(" ")),
+            Typography.body, c.textMuted, modifier = Modifier.padding(top = 10.dp),
+        )
     }
 }
 

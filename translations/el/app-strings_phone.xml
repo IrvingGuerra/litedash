@@ -22,6 +22,7 @@
     <string name="phone_step_install">Εγκαταστήστε το LiteDash Connect και δημιουργήστε λογαριασμό</string>
     <string name="phone_step_tap">Πατήστε «Σύνδεση οθόνης»</string>
     <string name="phone_step_scan">Στρέψτε την κάμερα σε αυτόν τον κωδικό</string>
+    <string name="phone_type_code">Χωρίς κάμερα; Στο LiteDash Connect πατήστε «Type a code» και πληκτρολογήστε %1$s</string>
     <string name="phone_connected">Συνδέθηκε</string>
     <string name="phone_searching">Αναζήτηση του κινητού σας…</string>
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>

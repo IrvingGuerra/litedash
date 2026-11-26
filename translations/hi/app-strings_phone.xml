@@ -22,6 +22,7 @@
     <string name="phone_step_install">LiteDash Connect इंस्टॉल करें और अकाउंट बनाएँ</string>
     <string name="phone_step_tap">“मेरी स्क्रीन जोड़ें” पर टैप करें</string>
     <string name="phone_step_scan">कैमरा इस कोड पर रखें</string>
+    <string name="phone_type_code">कैमरा नहीं है? LiteDash Connect में “Type a code” पर टैप करें और %1$s डालें</string>
     <string name="phone_connected">कनेक्टेड</string>
     <string name="phone_searching">आपका फ़ोन ढूँढ रहे हैं…</string>
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>

@@ -22,6 +22,7 @@
     <string name="phone_step_install">Telepítsd a LiteDash Connectet, és hozz létre fiókot</string>
     <string name="phone_step_tap">Koppints a „Kijelző összekapcsolása” gombra</string>
     <string name="phone_step_scan">Irányítsd a kamerát erre a kódra</string>
+    <string name="phone_type_code">Nincs kamera? A LiteDash Connectben koppints a „Type a code” gombra, és írd be: %1$s</string>
     <string name="phone_connected">Csatlakoztatva</string>
     <string name="phone_searching">A telefon keresése…</string>
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>

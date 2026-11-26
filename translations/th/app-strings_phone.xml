@@ -21,6 +21,7 @@
     <string name="phone_step_install">ติดตั้ง LiteDash Connect และสร้างบัญชี</string>
     <string name="phone_step_tap">แตะ “เชื่อมหน้าจอของฉัน”</string>
     <string name="phone_step_scan">หันกล้องไปที่รหัสนี้</string>
+    <string name="phone_type_code">ไม่มีกล้อง? ใน LiteDash Connect แตะ “Type a code” แล้วป้อน %1$s</string>
     <string name="phone_connected">เชื่อมต่อแล้ว</string>
     <string name="phone_searching">กำลังหาโทรศัพท์…</string>
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>

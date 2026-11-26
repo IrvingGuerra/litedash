@@ -21,6 +21,7 @@
     <string name="phone_step_install">Cài LiteDash Connect và tạo tài khoản</string>
     <string name="phone_step_tap">Nhấn “Liên kết màn hình”</string>
     <string name="phone_step_scan">Hướng camera vào mã này</string>
+    <string name="phone_type_code">Không có camera? Trong LiteDash Connect, nhấn “Type a code” rồi nhập %1$s</string>
     <string name="phone_connected">Đã kết nối</string>
     <string name="phone_searching">Đang tìm điện thoại…</string>
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>

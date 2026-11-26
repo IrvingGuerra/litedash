@@ -63,6 +63,25 @@ internal object LinkProtocol {
     private const val BEACON_PREFIX = "LD-LINK-1 beacon "
     const val BEACON_LENGTH = 50
 
+    /**
+     * ¿Es [text] el faro de un celular que espera el código (§2b)? Mismo formato y largo, con un sello fijo en vez del
+     * de una llave: todavía no hay llave, y un sello hecho con el código dejaría adivinarlo a quien escuche la red.
+     */
+    fun isPairingBeacon(text: String) =
+        text.length == BEACON_LENGTH && text.startsWith(BEACON_PREFIX) && text.endsWith(" $PAIRING_SEAL")
+
+    private const val PAIRING_SEAL = "pairing-by-code!"
+
+    /** Quién es el celular en el intercambio del código (la pantalla es su `id`). */
+    val PAIR_PHONE = "LD-LINK-1 phone".toByteArray(Charsets.US_ASCII)
+
+    /** El nombre del auto ([car]) o el modelo de la pantalla como viajan al vincular con el código: recortados como en el QR. */
+    fun pairLabel(text: String, car: Boolean) = text.take(if (car) CAR_MAX else SCREEN_MAX)
+
+    /** Lo que viaja en claro al vincular con el código y queda amarrado a las pruebas: el auto y la pantalla. */
+    fun pairBound(car: String, screen: String): ByteArray =
+        "LD-LINK-1 pair".toByteArray(Charsets.US_ASCII) + car.toByteArray(Charsets.UTF_8) + byteArrayOf(0) + screen.toByteArray(Charsets.UTF_8)
+
     /** Compara en tiempo constante. */
     fun sameMac(a: ByteArray, b: ByteArray) = MessageDigest.isEqual(a, b)
 

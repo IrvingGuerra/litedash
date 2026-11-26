@@ -22,6 +22,7 @@
     <string name="phone_step_install">Installera LiteDash Connect och skapa ditt konto</string>
     <string name="phone_step_tap">Tryck på ”Länka min skärm”</string>
     <string name="phone_step_scan">Rikta kameran mot den här koden</string>
+    <string name="phone_type_code">Ingen kamera? Tryck på ”Type a code” i LiteDash Connect och ange %1$s</string>
     <string name="phone_connected">Ansluten</string>
     <string name="phone_searching">Letar efter telefonen…</string>
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>

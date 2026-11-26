@@ -22,6 +22,7 @@
     <string name="phone_step_install">Installa LiteDash Connect e crea il tuo account</string>
     <string name="phone_step_tap">Tocca “Collega il mio schermo”</string>
     <string name="phone_step_scan">Inquadra questo codice con la fotocamera</string>
+    <string name="phone_type_code">Niente fotocamera? In LiteDash Connect tocca “Type a code” e inserisci %1$s</string>
     <string name="phone_connected">Connesso</string>
     <string name="phone_searching">Cerco il telefono…</string>
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>

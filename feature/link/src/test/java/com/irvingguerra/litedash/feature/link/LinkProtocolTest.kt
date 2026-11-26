@@ -183,4 +183,18 @@ class LinkProtocolTest {
         assertThrows(java.io.IOException::class.java) { LineReader(ByteArrayInputStream(ByteArray(2000) { 'a'.code.toByte() })).readLine(1024) }
         assertEquals("a".repeat(1024), LineReader(ByteArrayInputStream(("a".repeat(1024) + "\n").toByteArray())).readLine(1024))
     }
+
+    @Test fun thePairingBeaconIsToldApartFromAKeyedOne() {
+        assertTrue(LinkProtocol.isPairingBeacon("LD-LINK-1 beacon 6465666768696a6b pairing-by-code!"))
+        // El de una llave, otro largo u otro sello: no.
+        assertFalse(LinkProtocol.isPairingBeacon("LD-LINK-1 beacon 6465666768696a6b 75b83c422a160e18"))
+        assertFalse(LinkProtocol.isPairingBeacon("LD-LINK-1 beacon 6465666768696a6b pairing-by-code!!"))
+        assertFalse(LinkProtocol.isBeacon(ByteArray(32), "LD-LINK-1 beacon 6465666768696a6b pairing-by-code!"))
+    }
+
+    @Test fun whatTravelsInTheClearIsBoundAsSent() {
+        assertEquals("LD-LINK-1 pairMi Evo\u0000SRNUBI", String(LinkProtocol.pairBound("Mi Evo", "SRNUBI"), Charsets.UTF_8))
+        assertEquals(40, LinkProtocol.pairLabel("x".repeat(60), car = true).length)
+        assertEquals(30, LinkProtocol.pairLabel("x".repeat(60), car = false).length)
+    }
 }

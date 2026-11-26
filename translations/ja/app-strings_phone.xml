@@ -21,6 +21,7 @@
     <string name="phone_step_install">LiteDash Connect をインストールしてアカウントを作成</string>
     <string name="phone_step_tap">「画面をリンク」をタップ</string>
     <string name="phone_step_scan">このコードにカメラを向ける</string>
+    <string name="phone_type_code">カメラがない場合は、LiteDash Connectで「Type a code」をタップして %1$s を入力</string>
     <string name="phone_connected">接続済み</string>
     <string name="phone_searching">スマホを探しています…</string>
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>

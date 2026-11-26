@@ -21,6 +21,7 @@
     <string name="phone_step_install">Pasang LiteDash Connect dan buat akun Anda</string>
     <string name="phone_step_tap">Ketuk “Tautkan layar saya”</string>
     <string name="phone_step_scan">Arahkan kamera ke kode ini</string>
+    <string name="phone_type_code">Tidak ada kamera? Di LiteDash Connect, ketuk “Type a code” lalu masukkan %1$s</string>
     <string name="phone_connected">Terhubung</string>
     <string name="phone_searching">Mencari ponsel Anda…</string>
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
