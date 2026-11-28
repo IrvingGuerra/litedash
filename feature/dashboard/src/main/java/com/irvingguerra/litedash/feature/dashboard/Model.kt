@@ -340,7 +340,7 @@ enum class Template(val sizes: Set<ScreenSize>) {
     DESIGN_COLUMN(ScreenSize.entries.toSet()),
     /** Neón: la hora flotando, el velocímetro de aro neón al centro, la música, el mapa y el clima. */
     DESIGN_NEON(ScreenSize.entries.toSet()),
-    /** Cristal (antes Arena): la hora y el clima a un lado, tu auto al centro con la música y el mapa alto al otro. */
+    /** Esmeralda (antes Arena): la hora y el clima a un lado, tu auto al centro con la música y el mapa alto al otro. */
     DESIGN_SAND(ScreenSize.entries.toSet()),
     /** Bosque: el mapa a la mitad, tu auto al otro lado, la música (o la radio) y el clima. */
     DESIGN_FOREST(ScreenSize.entries.toSet()),

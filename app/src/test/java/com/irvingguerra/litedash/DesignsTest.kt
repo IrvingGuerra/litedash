@@ -28,9 +28,9 @@ class DesignsTest {
 
     @Test
     fun sixDesignsWithTheirOwnLayoutsAndGraphiteFirst() {
-        assertEquals(listOf("graphite", "cloud", "track", "route", "neon", "crystal"), DESIGNS.map { it.id })
+        assertEquals(listOf("graphite", "cloud", "track", "route", "neon", "emerald"), DESIGNS.map { it.id })
         // Cada uno con su acomodo, en el orden de las plantillas de Diseño (las de Columna y Bosque se quedan sin
-        // Diseño: las páginas que ya las tienen se siguen armando con ellas; la de Arena es ahora la de Cristal).
+        // Diseño: las páginas que ya las tienen se siguen armando con ellas; la de Arena es ahora la de Esmeralda).
         assertEquals(DESIGN_TEMPLATES.filter { t -> DESIGNS.any { it.template == t } }, DESIGNS.map { it.template })
         assertEquals(
             listOf(Template.DESIGN_COLUMN, Template.DESIGN_FOREST),

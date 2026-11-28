@@ -5,7 +5,7 @@
    "name": "Bahasa Indonesia",
    "progress": 100,
    "bytes": 66507,
-   "sha256": "97901572aef3419714a06bbb4eb8548bad4e6aa6dd9f29007ab31fa6e075b92a",
+   "sha256": "2fb110b8ac058a7cb1bfa5f1b8118fef5e5fc3d589342ab18b95e0cb4e0f7e2b",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []
@@ -15,7 +15,7 @@
    "name": "Deutsch",
    "progress": 100,
    "bytes": 69758,
-   "sha256": "c9c4d71c7b197e42eb9532952dcdbc643217fd755e63b82e8850386cbc5b15a4",
+   "sha256": "ea1047f4aa07f1adfa8294225e3df33d7dab111b79b3fb6c62551d7cdea17c80",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []
@@ -25,7 +25,7 @@
    "name": "Français",
    "progress": 100,
    "bytes": 73486,
-   "sha256": "06c710446c1f5e2c1dbe32b813e33062b9a27e5431bd9d05bd6e4b880da75559",
+   "sha256": "2aaada427ae8a888d530581e72e22cb3289e3bfb4ece6f9060ef5722a98cb2c2",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []
@@ -35,7 +35,7 @@
    "name": "Italiano",
    "progress": 100,
    "bytes": 69113,
-   "sha256": "5bb50c399db60fe7d6ddbd4174cf45e0fc71cc90b168888f0aa0a5b29ae33fb9",
+   "sha256": "684c73e4ad62fb1e59859ff185ea3b6200ff6fe91b758f9aeb8a0a282c7da06d",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []
@@ -45,7 +45,7 @@
    "name": "Magyar",
    "progress": 100,
    "bytes": 73257,
-   "sha256": "c53b5e1f2b312d6759e822831f5de8dca5c59796f6ae7e3fdeb38fba79e639b4",
+   "sha256": "1b40b60d376f6a3fe3f9be01f498ee4e6716cf8c13c0fa755817083700eae7bc",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []
@@ -55,7 +55,7 @@
    "name": "Nederlands",
    "progress": 100,
    "bytes": 68661,
-   "sha256": "60dd05f894859c0b265a0a5c4bc57d0d1fb0cb685499fbb39532abb3adb44f91",
+   "sha256": "376633d22dfb96cc69bce677878321c88c5689315f568b19fe02f88fda3155ca",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []
@@ -65,7 +65,7 @@
    "name": "Polski",
    "progress": 100,
    "bytes": 70040,
-   "sha256": "e05f02bf532865e15f53e62560208900c38e2b6c4bc29ae5d589414097cc1008",
+   "sha256": "942ee2f0f601870b7dbefcaca86472cfe50471d582d0e0773675ffcf5498e610",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []
@@ -75,7 +75,7 @@
    "name": "Português",
    "progress": 100,
    "bytes": 69072,
-   "sha256": "f2295c70d095a0af69e355f70fc23247f52a62cde64a3e74b1a48c497dd88cfc",
+   "sha256": "c6104b229061362e686c3fe19712a7e209da3cd2be7364ef94235d4647f602ab",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []
@@ -85,7 +85,7 @@
    "name": "Română",
    "progress": 100,
    "bytes": 70897,
-   "sha256": "dcd0255aaf67a414dec42443e7d9b43864cd5340f33c90be015c3e6b5e65e9de",
+   "sha256": "d1512d8b1e9bda6683cf51e4ce40abc6ed5b2a1298de39e28c01c00bf690c859",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []
@@ -95,7 +95,7 @@
    "name": "Svenska",
    "progress": 100,
    "bytes": 67061,
-   "sha256": "213aacd418d80e29a35dfa6b6a06b64bc874b91b6872c0de9f312ddd4d577da2",
+   "sha256": "5174721430061500b875ad59c167ad77151f98c72e1b81c81b926126edc2e5ab",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []
@@ -105,7 +105,7 @@
    "name": "Tiếng Việt",
    "progress": 100,
    "bytes": 76358,
-   "sha256": "812d882011647b805638146c3d20a8202252efacf8b1149a2fb2d403299efaed",
+   "sha256": "77dd765e69211e27dccdaca00b369346e813a8cb006f7159a50376fb263dcffe",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []
@@ -115,7 +115,7 @@
    "name": "Türkçe",
    "progress": 100,
    "bytes": 69445,
-   "sha256": "d168c07ae89698eddfd3e8f0c6555bf718a069b15ac25391bd86ebf5566c90f5",
+   "sha256": "00afa4066eaf7f0ea272a605098236d7a475e9753c284829460bbd7162727c84",
    "base": 10502999,
    "reviewed": true,
    "reviewers": [
@@ -127,7 +127,7 @@
    "name": "Čeština",
    "progress": 100,
    "bytes": 69131,
-   "sha256": "d2f5b3185035c13c2c5d924726a84111d06a5e9b53ec8780f189716f28991e95",
+   "sha256": "88307ced3377219152538ec901b0e1e3cf7625f37dabd23fad6cae6ba8e19347",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []
@@ -137,7 +137,7 @@
    "name": "Ελληνικά",
    "progress": 100,
    "bytes": 106145,
-   "sha256": "4693c0bb8cce0add6d00bb9de2bbdf4b9dc3a8851202ed543fba9a7ea8a9c268",
+   "sha256": "5b69ba022e8bb97075f222260e5d9b41af6dfe54dd3f5ca64e37ac3edd88d509",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []
@@ -147,7 +147,7 @@
    "name": "Русский",
    "progress": 100,
    "bytes": 99423,
-   "sha256": "71481c7be965f13b01a04b2301837cd8395ac754190fce426c450f0a27664f46",
+   "sha256": "44fa8991a755c523833ba16aecb6baa8d0ce4bcdc697164009e34164391c1830",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []
@@ -157,7 +157,7 @@
    "name": "Українська",
    "progress": 100,
    "bytes": 99934,
-   "sha256": "26ce0f9eba4cf77d6626ea61478b4378353ad3848184e32197c03cef41f545ed",
+   "sha256": "c0e5086f64a1c57d4afeed6fa54da1e13453a2df37745e3fbffe76d9e5d57c43",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []
@@ -167,7 +167,7 @@
    "name": "हिन्दी",
    "progress": 100,
    "bytes": 117106,
-   "sha256": "e52c0749a70d9afa46b55b2155af164cea5c8cd138a143e43b77860cd966f581",
+   "sha256": "90c288ec9703512f8eae39f8edd065c2d1049f388adac3c7b327a9cabb981938",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []
@@ -177,7 +177,7 @@
    "name": "ไทย",
    "progress": 100,
    "bytes": 117985,
-   "sha256": "784e4c56386b05d18e8879e7e9e567c7116ade33511a6ba704926b9c94470dfd",
+   "sha256": "4e5007dd0951ad302b7a8da569ba0d9f42de3d3721915f2ea4457e24f52ed8b2",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []
@@ -187,7 +187,7 @@
    "name": "日本語",
    "progress": 100,
    "bytes": 81889,
-   "sha256": "fa8e69c735d4049f09cd393dd466c00da24817b81207cf21ef3cca652ef3d680",
+   "sha256": "01dc88cd440a6dafd53fa81fc211b1a9d59ae992701fa76cf64e025fb08f8187",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []
@@ -197,7 +197,7 @@
    "name": "简体中文",
    "progress": 100,
    "bytes": 63974,
-   "sha256": "a5c4f5b77edd0f52f1dbad037374470e1e0ff6807c2dbc4836875b41487d8cf9",
+   "sha256": "16e8f2e820ef0e6b2832eda33b4e0a284bfe0f4cb2783f98692197b504cfaaf1",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []
@@ -207,7 +207,7 @@
    "name": "한국어",
    "progress": 100,
    "bytes": 72293,
-   "sha256": "c698e3d0e36a9138459c532569c695476518088ed326c140f56014915eed8b68",
+   "sha256": "6b877a2257313bec09647869ad7f5d5bc22db90e7f09c3340957e3b5abfedc22",
    "base": 10502999,
    "reviewed": false,
    "reviewers": []

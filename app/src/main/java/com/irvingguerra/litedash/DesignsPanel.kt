@@ -77,12 +77,13 @@ fun DesignsPanel(d: Dependencies, close: () -> Unit, onCustomize: () -> Unit) {
             BoxWithConstraints(Modifier.fillMaxWidth()) {
                 val columns = when {
                     grid.vertical || maxWidth < THREE_COLUMNS -> 2
-                    maxWidth >= ONE_ROW_EACH * DESIGNS.size -> DESIGNS.size
+                    // Hasta 5 caben bien en una fila; más, en filas parejas (6 = 3 y 3).
+                    DESIGNS.size <= ONE_ROW_MOST && maxWidth >= ONE_ROW_EACH * DESIGNS.size -> DESIGNS.size
                     else -> 3
                 }
                 val gap = 16.dp
                 // Un pelo menos: con el ancho justo, el redondeo a pixeles mandaba al último al renglón de abajo.
-                val width = (maxWidth - gap * (columns - 1)) / columns - 1.dp
+                val width = ((maxWidth - gap * (columns - 1)) / columns - 1.dp).coerceAtMost(CARD_MOST)
                 FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(gap), maxItemsInEachRow = columns) {
                     for (design in DESIGNS) {
                         val applied = design == current
@@ -123,6 +124,9 @@ fun DesignsPanel(d: Dependencies, close: () -> Unit, onCustomize: () -> Unit) {
 
 /** Lo ancho que pide cada Diseño para ir todos en una fila, y desde cuánto van 3 por fila (acostada). */
 private val ONE_ROW_EACH = 172.dp
+private const val ONE_ROW_MOST = 5
+/** Lo más ancho que se hace la tarjeta de un Diseño (en pantallas muy anchas, 3 por fila quedaban enormes). */
+private val CARD_MOST = 420.dp
 private val THREE_COLUMNS = 520.dp
 
 /**

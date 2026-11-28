@@ -78,9 +78,10 @@ val DESIGNS = listOf(
         wallpaper = "neon-luna", carColor = Color(0xFF1D2026), cardColor = Color(0xFF7A3FE0), accent = Color(0xFFFF4F9A),
         mapPalette = MapPalettes.INTERFACE,
     ),
-    // Para lucir el vidrio: puro cristal sobre la aurora (de día, la niebla del valle), con muchas tarjetas.
+    // Esmeralda, para lucir el vidrio: puro cristal sobre la aurora verde (de día, la niebla del valle), con muchas
+    // tarjetas. (Sus fondos se llaman `cristal-…`: así nació y ya estaban en el sitio.)
     Design(
-        "crystal", R.string.design_crystal, R.string.design_crystal_tagline, Template.DESIGN_SAND, ThemeMode.DARK,
+        "emerald", R.string.design_emerald, R.string.design_emerald_tagline, Template.DESIGN_SAND, ThemeMode.DARK,
         wallpaper = "cristal-aurora", carColor = Color(0xFFDDE6E4), accent = Color(0xFF3DDBB4),
     ),
 )
