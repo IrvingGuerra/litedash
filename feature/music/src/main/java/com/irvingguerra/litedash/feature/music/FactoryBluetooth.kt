@@ -16,6 +16,12 @@ internal abstract class FactoryBluetoothKind(val id: String, val family: HeadUni
     /** Sus recetas para que suene, de la primera a la última (hoy, las de su familia). */
     open val recipes: List<String> get() = family.bluetoothRecipes
 
+    /**
+     * Cuando el celular empieza a sonar por su Bluetooth, eso cuenta como el ▶ y se pide el sonido con la receta ya
+     * guardada ([phoneStartAsks]). Solo los perfiles con un reporte que lo pidió (regla 3: no se generaliza).
+     */
+    open val asksSoundWhenPhoneStarts: Boolean = false
+
     companion object {
         /**
          * Los perfiles de marca en el orden de prioridad de siempre (antes una sola lista `BRAND_BLUETOOTH`; las nuevas,
@@ -67,7 +73,11 @@ internal object GoodocomBluetooth : FactoryBluetoothKind(
     "goodocom", HeadUnit.GENERIC, BrandBluetooth("com.goodocom.gocsdk", HeadUnit.GENERIC, music = false),
 )
 
-internal object AutochipsBluetooth : FactoryBluetoothKind("autochips", HeadUnit.AUTOCHIPS, BrandBluetooth("com.autochips.bluetooth", HeadUnit.AUTOCHIPS))
+/** Autochips (AC8227L, Essgoo): avisa la canción y el estado por `AvrcpCtPlayerUtility` ([BroadcastMeta]). */
+internal object AutochipsBluetooth : FactoryBluetoothKind("autochips", HeadUnit.AUTOCHIPS, BrandBluetooth("com.autochips.bluetooth", HeadUnit.AUTOCHIPS)) {
+    /** #13 (Essgoo, 3FE18D y 664682): el celular ya sonaba y nadie pedía la entrada de audio. */
+    override val asksSoundWhenPhoneStarts = true
+}
 
 /** YF Tech: módulo como Goodocom (chip propio, familia no). */
 internal object YfTechBluetooth : FactoryBluetoothKind(

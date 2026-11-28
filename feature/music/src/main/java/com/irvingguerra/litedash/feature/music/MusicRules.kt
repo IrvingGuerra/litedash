@@ -163,9 +163,9 @@ internal fun sourceStillHeld(held: Boolean, lost: Boolean, linked: Boolean): Boo
  * vez cada [PHONE_START_GAP_MS]. Con dato de velocidad y el auto andando se sigue posponiendo ([holdsForMotion]).
  */
 internal fun phoneStartAsks(
-    family: HeadUnit, bluetoothMode: Boolean, was: Boolean?, now: Boolean?, saved: String?,
+    kind: FactoryBluetoothKind, bluetoothMode: Boolean, was: Boolean?, now: Boolean?, saved: String?,
     sinceLastMs: Long, inCall: Boolean, radioOn: Boolean,
-): Boolean = family == HeadUnit.AUTOCHIPS && bluetoothMode && now == true && was != true &&
+): Boolean = kind.asksSoundWhenPhoneStarts && bluetoothMode && now == true && was != true &&
     saved != null && saved != Recipes.FAILED && sinceLastMs >= PHONE_START_GAP_MS && !inCall && !radioOn
 
 internal const val PHONE_START_GAP_MS = 60_000L

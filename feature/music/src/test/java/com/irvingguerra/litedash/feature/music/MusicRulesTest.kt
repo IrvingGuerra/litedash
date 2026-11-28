@@ -312,7 +312,7 @@ class MusicRulesTest {
         fun asks(
             family: HeadUnit = HeadUnit.AUTOCHIPS, bluetooth: Boolean = true, was: Boolean? = false, now: Boolean? = true,
             saved: String? = Recipes.OPEN_FACTORY, since: Long = PHONE_START_GAP_MS, inCall: Boolean = false, radioOn: Boolean = false,
-        ) = phoneStartAsks(family, bluetooth, was, now, saved, since, inCall, radioOn)
+        ) = phoneStartAsks(FactoryBluetoothKind.forFamily(family), bluetooth, was, now, saved, since, inCall, radioOn)
         assertTrue(asks())
         // El primer aviso tras abrir LiteDash también cuenta (no se sabía si sonaba).
         assertTrue(asks(was = null))

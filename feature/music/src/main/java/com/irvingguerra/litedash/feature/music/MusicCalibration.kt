@@ -79,7 +79,7 @@ fun MusicRepository.askBluetoothSound() {
 internal fun MusicRepository.phoneStarted(was: Boolean?, now: Boolean?) {
     val at = SystemClock.elapsedRealtime()
     val radioOn = radio.song?.playing == true || factoryFor(radio)?.on == true
-    if (!phoneStartAsks(headUnit, mode == MusicMode.BLUETOOTH, was, now, btStore.saved?.id, at - phoneStartedAt, inCall(), radioOn)) return
+    if (!phoneStartAsks(bluetoothKind, mode == MusicMode.BLUETOOTH, was, now, btStore.saved?.id, at - phoneStartedAt, inCall(), radioOn)) return
     phoneStartedAt = at
     trace("bluetooth: el celular empezó a sonar, se pide la entrada de audio")
     askedAt = at
