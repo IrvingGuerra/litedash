@@ -166,6 +166,8 @@
     <string name="design_route_tagline">Peta adalah halamannya.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">Mode malam dengan cahaya.</string>
+    <string name="design_crystal">Crystal</string>
+    <string name="design_crystal_tagline">Aurora di malam hari, kabut di siang hari.</string>
     <string name="add">Tambah</string>
     <string name="add_tile">Tambah ke beranda</string>
     <string name="add_group_car">Mobil Anda</string>
@@ -467,6 +469,8 @@
     <string name="wallpaper_title">Wallpaper</string>
     <string name="wallpaper_help">Wallpaper LiteDash (diunduh saat diketuk) atau foto Anda sendiri: sama di setiap halaman dengan gambar. Tanpa itu, latar tema.</string>
     <string name="wallpaper_included">Wallpaper LiteDash</string>
+    <string name="wallpaper_photos">Foto</string>
+    <string name="wallpaper_colors">Warna</string>
     <string name="wallpaper_downloading">Mengunduh…</string>
     <string name="wallpaper_failed">Gagal mengunduh wallpaper; periksa koneksi Anda.</string>
     <string name="wallpaper_credit">Foto: %1$s</string>

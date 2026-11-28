@@ -166,6 +166,8 @@
     <string name="design_route_tagline">A térkép maga az oldal.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">Éjszakai, ragyogással.</string>
+    <string name="design_crystal">Crystal</string>
+    <string name="design_crystal_tagline">Éjjel sarki fény, nappal köd.</string>
     <string name="add">Hozzáadás</string>
     <string name="add_tile">Hozzáadás a kezdőképernyőhöz</string>
     <string name="add_group_car">Az autód</string>
@@ -472,6 +474,8 @@
     <string name="wallpaper_title">Háttérkép</string>
     <string name="wallpaper_help">Egy LiteDash háttérkép (koppintásra letöltődik) vagy a saját fotód: ugyanaz minden képes oldalon. Ha nincs, a téma háttere.</string>
     <string name="wallpaper_included">LiteDash hátterek</string>
+    <string name="wallpaper_photos">Fotók</string>
+    <string name="wallpaper_colors">Színek</string>
     <string name="wallpaper_downloading">Letöltés…</string>
     <string name="wallpaper_failed">Nem sikerült letölteni a hátteret; nézd meg a kapcsolatot.</string>
     <string name="wallpaper_credit">Fotó: %1$s</string>

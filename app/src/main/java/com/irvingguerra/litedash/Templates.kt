@@ -129,7 +129,12 @@ fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit, onDesigns: () -
             }
             // Cada plantilla armada una vez por pestaña (para no repetir y para su miniatura).
             val layouts = remember(tab, grid) { tab.templates.filter { it.fits(grid.vertical) }.associateWith { it.tiles(grid, tab.hero, dashboard.hidden) } }
-            val templates = layouts.keys.distinctBy { p -> layouts.getValue(p).map { listOf(it.type, it.col, it.row, it.width, it.height) } }
+            // «Auto al centro» y «Tarjetas abajo» son casi la misma (el auto arriba y una fila de tarjetas): solo va una,
+            // la recomendada para esta pantalla o, si ninguna lo es, la de tarjetas. La recomendada, primero.
+            val twin = if (suggested == Template.CENTER) Template.CARDS else Template.CENTER
+            val templates = layouts.keys.filter { it != twin }
+                .distinctBy { p -> layouts.getValue(p).map { listOf(it.type, it.col, it.row, it.width, it.height) } }
+                .sortedByDescending { it == suggested }
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 for (p in templates) {
                     Card(Modifier.width(260.dp), onClick = { apply(p) }) {

@@ -21,6 +21,15 @@ class WallpapersTest {
     }
 
     @Test
+    fun photosAndColorsGoInTheirOwnTab() {
+        val list = parseWallpapers(
+            """{"wallpapers":[{"id":"a","credit":"NASA","kind":"photo"},{"id":"b","credit":"LiteDash","kind":"color"},{"id":"c","credit":"NPS"},{"id":"d","credit":"LiteDash"},{"id":"e"}]}""",
+        )!!
+        // Con `kind`, lo que diga; sin él (una lista de antes), los de LiteDash y los sin crédito son de colores.
+        assertEquals(listOf(true, false, true, false, false), list.map { it.photo })
+    }
+
+    @Test
     fun notAListIsNull() {
         // P. ej. la página de registro de un wifi en vez de index.json.
         assertNull(parseWallpapers("<html>login</html>"))

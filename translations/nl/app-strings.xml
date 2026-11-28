@@ -166,6 +166,8 @@
     <string name="design_route_tagline">De kaart is de pagina.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">Voor de nacht, met een gloed.</string>
+    <string name="design_crystal">Crystal</string>
+    <string name="design_crystal_tagline">Noorderlicht \'s nachts, mist overdag.</string>
     <string name="add">Toevoegen</string>
     <string name="add_tile">Aan startscherm toevoegen</string>
     <string name="add_group_car">Je auto</string>
@@ -472,6 +474,8 @@
     <string name="wallpaper_title">Achtergrond</string>
     <string name="wallpaper_help">Een LiteDash-achtergrond (gedownload als je erop tikt) of een eigen foto: dezelfde op elke pagina met een afbeelding. Zonder, de achtergrond van het thema.</string>
     <string name="wallpaper_included">LiteDash-achtergronden</string>
+    <string name="wallpaper_photos">Foto\'s</string>
+    <string name="wallpaper_colors">Kleuren</string>
     <string name="wallpaper_downloading">Downloaden…</string>
     <string name="wallpaper_failed">De achtergrond kon niet worden gedownload; check je verbinding.</string>
     <string name="wallpaper_credit">Foto: %1$s</string>

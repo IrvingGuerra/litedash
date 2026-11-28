@@ -166,6 +166,8 @@
     <string name="design_route_tagline">Kartan är sidan.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">För natten, med ett sken.</string>
+    <string name="design_crystal">Crystal</string>
+    <string name="design_crystal_tagline">Norrsken på natten, dimma på dagen.</string>
     <string name="add">Lägg till</string>
     <string name="add_tile">Lägg till på start</string>
     <string name="add_group_car">Din bil</string>
@@ -472,6 +474,8 @@
     <string name="wallpaper_title">Bakgrund</string>
     <string name="wallpaper_help">En LiteDash-bakgrund (laddas ner när du trycker på den) eller ett eget foto: samma på varje sida med bild. Utan, temats bakgrund.</string>
     <string name="wallpaper_included">LiteDash-bakgrunder</string>
+    <string name="wallpaper_photos">Foton</string>
+    <string name="wallpaper_colors">Färger</string>
     <string name="wallpaper_downloading">Laddar ner…</string>
     <string name="wallpaper_failed">Kunde inte ladda ner bakgrunden; kolla anslutningen.</string>
     <string name="wallpaper_credit">Foto: %1$s</string>

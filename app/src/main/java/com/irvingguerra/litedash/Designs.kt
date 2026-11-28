@@ -78,6 +78,11 @@ val DESIGNS = listOf(
         wallpaper = "neon-luna", carColor = Color(0xFF1D2026), cardColor = Color(0xFF7A3FE0), accent = Color(0xFFFF4F9A),
         mapPalette = MapPalettes.INTERFACE,
     ),
+    // Para lucir el vidrio: puro cristal sobre la aurora (de día, la niebla del valle), con muchas tarjetas.
+    Design(
+        "crystal", R.string.design_crystal, R.string.design_crystal_tagline, Template.DESIGN_SAND, ThemeMode.DARK,
+        wallpaper = "cristal-aurora", carColor = Color(0xFFDDE6E4), accent = Color(0xFF3DDBB4),
+    ),
 )
 
 /**
@@ -90,6 +95,7 @@ private val WALLPAPER_PAIRS = listOf(
     // Las fotos (1.5.28): paisajes con detalle, que es lo que el canto del cristal dobla. Los de arriba (por código) se
     // quedan para quien ya los tiene puestos y en la galería de fondos.
     "grafito-cielo" to "grafito-niebla", "nube-estrellas" to "nube-dunas", "pista-ocaso" to "pista-salar", "neon-luna" to "neon-alba",
+    "cristal-aurora" to "cristal-niebla",
 )
 
 /**

@@ -166,6 +166,8 @@
     <string name="design_route_tagline">แผนที่คือทั้งหน้า</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">สำหรับกลางคืน มีแสงเรือง</string>
+    <string name="design_crystal">Crystal</string>
+    <string name="design_crystal_tagline">แสงออโรราตอนกลางคืน หมอกตอนกลางวัน</string>
     <string name="add">เพิ่ม</string>
     <string name="add_tile">เพิ่มลงหน้าหลัก</string>
     <string name="add_group_car">รถของคุณ</string>
@@ -464,6 +466,8 @@
     <string name="wallpaper_title">วอลเปเปอร์</string>
     <string name="wallpaper_help">วอลเปเปอร์ LiteDash (ดาวน์โหลดเมื่อแตะ) หรือรูปของคุณเอง: เหมือนกันในทุกหน้าที่มีรูป ถ้าไม่มี จะใช้พื้นหลังของธีม</string>
     <string name="wallpaper_included">วอลเปเปอร์ LiteDash</string>
+    <string name="wallpaper_photos">รูปภาพ</string>
+    <string name="wallpaper_colors">สี</string>
     <string name="wallpaper_downloading">กำลังดาวน์โหลด…</string>
     <string name="wallpaper_failed">ดาวน์โหลดวอลเปเปอร์ไม่ได้ ตรวจการเชื่อมต่อ</string>
     <string name="wallpaper_credit">ภาพ: %1$s</string>

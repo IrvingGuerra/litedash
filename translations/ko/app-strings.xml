@@ -166,6 +166,8 @@
     <string name="design_route_tagline">지도가 곧 페이지.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">밤을 위한 은은한 빛.</string>
+    <string name="design_crystal">Crystal</string>
+    <string name="design_crystal_tagline">밤에는 오로라, 낮에는 안개.</string>
     <string name="add">추가</string>
     <string name="add_tile">홈에 추가</string>
     <string name="add_group_car">내 차</string>
@@ -467,6 +469,8 @@
     <string name="wallpaper_title">배경화면</string>
     <string name="wallpaper_help">LiteDash 배경화면(탭하면 다운로드) 또는 내 사진: 이미지가 있는 모든 페이지에 똑같이 적용돼요. 없으면 테마 배경이에요.</string>
     <string name="wallpaper_included">LiteDash 배경화면</string>
+    <string name="wallpaper_photos">사진</string>
+    <string name="wallpaper_colors">색상</string>
     <string name="wallpaper_downloading">다운로드 중…</string>
     <string name="wallpaper_failed">배경화면을 다운로드하지 못했어요. 연결을 확인하세요.</string>
     <string name="wallpaper_credit">사진: %1$s</string>

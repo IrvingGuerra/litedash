@@ -26,8 +26,11 @@ private const val WALLPAPERS_URL = "https://litedash.dev/wallpapers/"
 /** Las listas de litedash.dev (fondos, idiomas) se vuelven a pedir a lo más una vez al día; sin internet, la última. */
 internal const val LIST_MAX_AGE_MS = 24 * 60 * 60 * 1000L
 
-/** Un fondo de LiteDash: [credit] = de quién es la foto ("LiteDash" en los nuestros). */
-class WallpaperChoice(val id: String, val credit: String)
+/**
+ * Un fondo de LiteDash: [credit] = de quién es la foto ("LiteDash" en los nuestros); [photo] = es una foto (su pestaña
+ * en la galería) y no uno de colores hecho por nosotros.
+ */
+class WallpaperChoice(val id: String, val credit: String, val photo: Boolean)
 
 private fun folder(context: Context) = File(context.cacheDir, "wallpapers").apply { mkdirs() }
 
@@ -59,7 +62,14 @@ internal fun parseWallpapers(text: String): List<WallpaperChoice>? = try {
     val list = JSONObject(text).getJSONArray("wallpapers")
     (0 until list.length()).map { i ->
         val o = list.getJSONObject(i)
-        WallpaperChoice(o.getString("id"), o.optString("credit"))
+        val credit = o.optString("credit")
+        // Una lista de antes de las categorías no trae `kind`: los nuestros son los de colores.
+        val photo = when (o.optString("kind")) {
+            "photo" -> true
+            "color" -> false
+            else -> credit.isNotBlank() && credit != OWN_CREDIT
+        }
+        WallpaperChoice(o.getString("id"), credit, photo)
     }.filter { it.id.matches(SAFE_ID) }
 } catch (e: JSONException) {
     null

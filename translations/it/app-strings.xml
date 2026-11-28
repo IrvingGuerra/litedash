@@ -166,6 +166,8 @@
     <string name="design_route_tagline">La mappa è la pagina.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">Di notte, con un bagliore.</string>
+    <string name="design_crystal">Crystal</string>
+    <string name="design_crystal_tagline">Aurora di notte, nebbia di giorno.</string>
     <string name="add">Aggiungi</string>
     <string name="add_tile">Aggiungi alla Home</string>
     <string name="add_group_car">La tua auto</string>
@@ -472,6 +474,8 @@
     <string name="wallpaper_title">Sfondo</string>
     <string name="wallpaper_help">Uno sfondo di LiteDash (si scarica quando lo tocchi) o una tua foto: la stessa in tutte le pagine con immagine. Senza, lo sfondo del tema.</string>
     <string name="wallpaper_included">Sfondi di LiteDash</string>
+    <string name="wallpaper_photos">Foto</string>
+    <string name="wallpaper_colors">Colori</string>
     <string name="wallpaper_downloading">Download…</string>
     <string name="wallpaper_failed">Impossibile scaricare lo sfondo; controlla la connessione.</string>
     <string name="wallpaper_credit">Foto: %1$s</string>

@@ -170,6 +170,8 @@
     <string name="design_route_tagline">El mapa es la página.</string>
     <string name="design_neon">Neón</string>
     <string name="design_neon_tagline">De noche, con resplandor.</string>
+    <string name="design_crystal">Cristal</string>
+    <string name="design_crystal_tagline">Aurora de noche, niebla de día.</string>
     <string name="add">Agregar</string>
     <string name="add_tile">Agregar al inicio</string>
     <string name="add_widget">Agregar widget</string>
@@ -491,6 +493,8 @@
     <string name="wallpaper_title">Fondo de pantalla</string>
     <string name="wallpaper_help">Uno de los fondos de LiteDash (se baja al tocarlo) o una foto tuya: la misma en todas las páginas con imagen. Sin fondo, el del tema.</string>
     <string name="wallpaper_included">Fondos de LiteDash</string>
+    <string name="wallpaper_photos">Fotos</string>
+    <string name="wallpaper_colors">Colores</string>
     <string name="wallpaper_downloading">Bajando…</string>
     <string name="wallpaper_failed">No se pudo bajar el fondo; revisa tu conexión.</string>
     <string name="wallpaper_credit">Foto: %1$s</string>

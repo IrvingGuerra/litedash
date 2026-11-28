@@ -27,13 +27,13 @@ class DesignsTest {
     private val mine = DesignLook(ThemeMode.LIGHT, 0xFF30D158.toInt(), 0xFF1F4FD8.toInt(), CardStyle.GLASS, 0.8f, "orientation=heading;zoom=mid;flow=off", BarStyle.FULL, 0xFF123456.toInt())
 
     @Test
-    fun fiveDesignsWithTheirOwnLayoutsAndGraphiteFirst() {
-        assertEquals(listOf("graphite", "cloud", "track", "route", "neon"), DESIGNS.map { it.id })
-        // Cada uno con su acomodo, en el orden de las plantillas de Diseño (las de Columna, Arena y Bosque se quedan
-        // sin Diseño: las páginas que ya las tienen se siguen armando con ellas).
+    fun sixDesignsWithTheirOwnLayoutsAndGraphiteFirst() {
+        assertEquals(listOf("graphite", "cloud", "track", "route", "neon", "crystal"), DESIGNS.map { it.id })
+        // Cada uno con su acomodo, en el orden de las plantillas de Diseño (las de Columna y Bosque se quedan sin
+        // Diseño: las páginas que ya las tienen se siguen armando con ellas; la de Arena es ahora la de Cristal).
         assertEquals(DESIGN_TEMPLATES.filter { t -> DESIGNS.any { it.template == t } }, DESIGNS.map { it.template })
         assertEquals(
-            listOf(Template.DESIGN_COLUMN, Template.DESIGN_SAND, Template.DESIGN_FOREST),
+            listOf(Template.DESIGN_COLUMN, Template.DESIGN_FOREST),
             DESIGN_TEMPLATES.filter { t -> DESIGNS.none { it.template == t } },
         )
         assertEquals(DESIGNS.size, DESIGNS.map { it.id }.toSet().size)

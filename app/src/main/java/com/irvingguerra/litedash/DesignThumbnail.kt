@@ -86,6 +86,7 @@ internal class DesignColors(val ui: Colors, val base: Color, val glowA: Color, v
             "cloud" to Triple(Color(0xFFEDF0F3), Color(0xFFFFFDF8), Color(0xFFD9E1E9)),
             "track" to Triple(Color(0xFF100C0E), Color(0xFF2B1418), Color(0xFF5A0F1A)),
             "neon" to Triple(Color(0xFF110E28), Color(0xFF55186E), Color(0xFF0D3657)),
+            "crystal" to Triple(Color(0xFF061014), Color(0xFF0E4A44), Color(0xFF12303A)),
         )
     }
 }

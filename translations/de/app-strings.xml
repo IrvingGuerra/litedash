@@ -166,6 +166,8 @@
     <string name="design_route_tagline">Die Karte ist die Seite.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">Für die Nacht, mit Leuchten.</string>
+    <string name="design_crystal">Crystal</string>
+    <string name="design_crystal_tagline">Polarlicht bei Nacht, Nebel bei Tag.</string>
     <string name="add">Hinzufügen</string>
     <string name="add_tile">Zum Start hinzufügen</string>
     <string name="add_group_car">Dein Auto</string>
@@ -472,6 +474,8 @@
     <string name="wallpaper_title">Hintergrund</string>
     <string name="wallpaper_help">Ein LiteDash-Hintergrund (wird beim Antippen geladen) oder ein eigenes Foto: dasselbe auf jeder Seite mit Bild. Ohne: der Hintergrund des Designs.</string>
     <string name="wallpaper_included">LiteDash-Hintergründe</string>
+    <string name="wallpaper_photos">Fotos</string>
+    <string name="wallpaper_colors">Farben</string>
     <string name="wallpaper_downloading">Lädt…</string>
     <string name="wallpaper_failed">Hintergrund konnte nicht geladen werden; prüfe deine Verbindung.</string>
     <string name="wallpaper_credit">Foto: %1$s</string>

@@ -166,6 +166,8 @@
     <string name="design_route_tagline">Harita sayfanın kendisi.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">Gece için, ışıltılı.</string>
+    <string name="design_crystal">Crystal</string>
+    <string name="design_crystal_tagline">Gece kutup ışıkları, gündüz sis.</string>
     <string name="add">Ekle</string>
     <string name="add_tile">Ana ekrana ekle</string>
     <string name="add_group_car">Arabanız</string>
@@ -472,6 +474,8 @@
     <string name="wallpaper_title">Duvar kağıdı</string>
     <string name="wallpaper_help">Bir LiteDash duvar kağıdı (dokununca indirilir) veya kendi fotoğrafınız: görselli tüm sayfalarda aynı. Yoksa tema arka planı.</string>
     <string name="wallpaper_included">LiteDash duvar kağıtları</string>
+    <string name="wallpaper_photos">Fotoğraflar</string>
+    <string name="wallpaper_colors">Renkler</string>
     <string name="wallpaper_downloading">İndiriliyor…</string>
     <string name="wallpaper_failed">Duvar kağıdı indirilemedi; bağlantınızı kontrol edin.</string>
     <string name="wallpaper_credit">Fotoğraf: %1$s</string>

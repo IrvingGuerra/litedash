@@ -166,6 +166,8 @@
     <string name="design_route_tagline">Harta e pagina.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">De noapte, cu strălucire.</string>
+    <string name="design_crystal">Crystal</string>
+    <string name="design_crystal_tagline">Auroră noaptea, ceață ziua.</string>
     <string name="add">Adaugă</string>
     <string name="add_tile">Adaugă pe ecranul principal</string>
     <string name="add_group_car">Mașina ta</string>
@@ -477,6 +479,8 @@
     <string name="wallpaper_title">Imagine de fundal</string>
     <string name="wallpaper_help">Un fundal LiteDash (se descarcă când îl atingi) sau o fotografie a ta: aceeași pe toate paginile cu imagine. Fără, fundalul temei.</string>
     <string name="wallpaper_included">Fundaluri LiteDash</string>
+    <string name="wallpaper_photos">Fotografii</string>
+    <string name="wallpaper_colors">Culori</string>
     <string name="wallpaper_downloading">Se descarcă…</string>
     <string name="wallpaper_failed">Fundalul nu a putut fi descărcat; verifică conexiunea.</string>
     <string name="wallpaper_credit">Foto: %1$s</string>

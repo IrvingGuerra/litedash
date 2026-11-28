@@ -166,6 +166,8 @@
     <string name="design_route_tagline">Карта — це вся сторінка.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">Нічний, із сяйвом.</string>
+    <string name="design_crystal">Crystal</string>
+    <string name="design_crystal_tagline">Уночі сяйво, удень туман.</string>
     <string name="add">Додати</string>
     <string name="add_tile">Додати на головний екран</string>
     <string name="add_group_car">Твоє авто</string>
@@ -482,6 +484,8 @@
     <string name="wallpaper_title">Шпалери</string>
     <string name="wallpaper_help">Шпалери LiteDash (завантажуються після натискання) або твоє фото: те саме на всіх сторінках із зображенням. Без них — фон теми.</string>
     <string name="wallpaper_included">Шпалери LiteDash</string>
+    <string name="wallpaper_photos">Фото</string>
+    <string name="wallpaper_colors">Кольори</string>
     <string name="wallpaper_downloading">Завантаження…</string>
     <string name="wallpaper_failed">Не вдалося завантажити шпалери; перевір з’єднання.</string>
     <string name="wallpaper_credit">Фото: %1$s</string>

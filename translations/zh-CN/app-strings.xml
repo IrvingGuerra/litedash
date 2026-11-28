@@ -166,6 +166,8 @@
     <string name="design_route_tagline">地图即整个页面。</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">夜间模式，带光晕。</string>
+    <string name="design_crystal">Crystal</string>
+    <string name="design_crystal_tagline">夜晚极光，白天薄雾。</string>
     <string name="add">添加</string>
     <string name="add_tile">添加到主屏幕</string>
     <string name="add_group_car">你的车</string>
@@ -467,6 +469,8 @@
     <string name="wallpaper_title">壁纸</string>
     <string name="wallpaper_help">LiteDash 壁纸（点按时下载）或你自己的照片：所有带图片的页面都相同。不选则使用主题背景。</string>
     <string name="wallpaper_included">LiteDash 壁纸</string>
+    <string name="wallpaper_photos">照片</string>
+    <string name="wallpaper_colors">色彩</string>
     <string name="wallpaper_downloading">正在下载…</string>
     <string name="wallpaper_failed">无法下载壁纸，请检查网络。</string>
     <string name="wallpaper_credit">照片：%1$s</string>

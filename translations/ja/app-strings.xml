@@ -166,6 +166,8 @@
     <string name="design_route_tagline">地図がページ全体に。</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">夜向け、ほのかな光。</string>
+    <string name="design_crystal">Crystal</string>
+    <string name="design_crystal_tagline">夜はオーロラ、昼は霧。</string>
     <string name="add">追加</string>
     <string name="add_tile">ホームに追加</string>
     <string name="add_group_car">あなたの車</string>
@@ -467,6 +469,8 @@
     <string name="wallpaper_title">壁紙</string>
     <string name="wallpaper_help">LiteDash の壁紙（タップでダウンロード）または自分の写真。画像のあるすべてのページで共通です。未設定の場合はテーマの背景です。</string>
     <string name="wallpaper_included">LiteDash の壁紙</string>
+    <string name="wallpaper_photos">写真</string>
+    <string name="wallpaper_colors">カラー</string>
     <string name="wallpaper_downloading">ダウンロード中…</string>
     <string name="wallpaper_failed">壁紙をダウンロードできませんでした。接続を確認してください。</string>
     <string name="wallpaper_credit">写真：%1$s</string>

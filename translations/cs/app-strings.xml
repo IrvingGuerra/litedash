@@ -166,6 +166,8 @@
     <string name="design_route_tagline">Mapa je celá stránka.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">Noční, se září.</string>
+    <string name="design_crystal">Crystal</string>
+    <string name="design_crystal_tagline">Polární záře v noci, mlha ve dne.</string>
     <string name="add">Přidat</string>
     <string name="add_tile">Přidat na plochu</string>
     <string name="add_group_car">Tvoje auto</string>
@@ -482,6 +484,8 @@
     <string name="wallpaper_title">Tapeta</string>
     <string name="wallpaper_help">Tapeta LiteDash (stáhne se po klepnutí) nebo tvoje fotka: stejná na všech stránkách s obrázkem. Bez ní pozadí motivu.</string>
     <string name="wallpaper_included">Tapety LiteDash</string>
+    <string name="wallpaper_photos">Fotky</string>
+    <string name="wallpaper_colors">Barvy</string>
     <string name="wallpaper_downloading">Stahuji…</string>
     <string name="wallpaper_failed">Tapetu se nepodařilo stáhnout; zkontroluj připojení.</string>
     <string name="wallpaper_credit">Foto: %1$s</string>

@@ -46,6 +46,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -855,8 +856,13 @@ fun WallpaperSettings(prefs: Preferences) {
     val list = choices
     if (!list.isNullOrEmpty()) {
         Label(stringResource(R.string.wallpaper_included), Typography.label, c.textMuted)
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            for (w in list) {
+        // Por categoría: fotos (paisajes, lucen el vidrio) o colores (los hechos por LiteDash). Abre en la del fondo puesto.
+        val both = list.any { it.photo } && list.any { !it.photo }
+        var photos by remember(chosen, list) { mutableStateOf(list.firstOrNull { it.id == chosen }?.photo ?: list.any { it.photo }) }
+        if (both) Segmented(listOf(true to stringResource(R.string.wallpaper_photos), false to stringResource(R.string.wallpaper_colors)), photos, { photos = it })
+        // Otra categoría, otra fila: empieza desde el principio.
+        Row(Modifier.fillMaxWidth().horizontalScroll(key(photos) { rememberScrollState() }), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            for (w in list) if (!both || w.photo == photos) {
                 val thumb by produceState<ImageBitmap?>(null, w.id) { value = wallpaperThumb(context, w.id) }
                 val selected = chosen == w.id
                 val shape = RoundedCornerShape(Radius.inner)
@@ -1024,7 +1030,7 @@ private fun placeSafely(context: Context) {
 }
 
 /** El crédito de los fondos hechos por LiteDash en index.json: ese no se muestra. */
-private const val OWN_CREDIT = "LiteDash"
+internal const val OWN_CREDIT = "LiteDash"
 
 /** Ancho de cada miniatura de los fondos de LiteDash (16:9). */
 private val WALLPAPER_THUMB_WIDTH = 144.dp
