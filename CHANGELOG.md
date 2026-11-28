@@ -4,6 +4,20 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.30] - 2026-11-28
+
+Un Diseño nuevo y los fondos por categoría.
+
+### Nuevo
+- **Diseño Esmeralda:** puro vidrio sobre una aurora verde de noche y niebla en el valle de día, con tu auto al centro.
+  Está en Ajustes → Inicio y apariencia → Inicio → Diseño.
+- **Fondos por categoría:** la galería de fondos de LiteDash se divide en Fotos y Colores.
+
+### Cambiado
+- La galería de Diseños muestra los seis en dos filas de tres.
+- **Plantillas:** la recomendada para tu pantalla sale primero, y de «Auto al centro» y «Tarjetas abajo», que eran casi
+  iguales, solo se ofrece una. Si ya tenías puesta cualquiera, tu inicio no cambia.
+
 ## [1.5.29] - 2026-11-28
 
 El vidrio, más fino, y widgets que aprovechan su espacio.

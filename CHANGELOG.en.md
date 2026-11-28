@@ -3,6 +3,20 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.30] - 2026-11-28
+
+A new Design and wallpapers by category.
+
+### New
+- **Emerald Design:** pure glass over a green aurora at night and mist in the valley by day, with your car in the
+  center. Find it in Settings → Home & look → Home → Design.
+- **Wallpapers by category:** the LiteDash wallpaper gallery is split into Photos and Colors.
+
+### Changed
+- The Designs gallery shows all six in two rows of three.
+- **Layouts:** the one recommended for your screen comes first, and of "Car in the middle" and "Cards below", which were
+  nearly the same, only one is offered. If you already had either applied, your home doesn't change.
+
 ## [1.5.29] - 2026-11-28
 
 Finer glass, and widgets that use their space.
