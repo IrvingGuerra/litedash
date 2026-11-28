@@ -44,6 +44,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.IntSize
 import kotlin.math.abs
+import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 import kotlinx.coroutines.Dispatchers
@@ -51,7 +52,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.withContext
 import kotlin.math.PI
-import kotlin.math.atan2
 
 /** Cómo se rellenan las tarjetas de toda la app: lisas o de vidrio (lo de fábrica). */
 enum class CardStyle(val stored: String) {
@@ -70,7 +70,7 @@ enum class CardStyle(val stored: String) {
  * («Oscurecer el fondo») solo redibuja, no recompone.
  */
 @Immutable
-class CardBackdrop(val image: ImageBitmap, val veil: () -> Color) {
+class CardBackdrop(val image: ImageBitmap, internal val sharp: Pixels? = null, val veil: () -> Color) {
     /** Sus pixeles, para doblarlos en la orilla del cristal ([refracted]); se leen una vez, fuera del hilo principal. */
     internal val pixels: IntArray by lazy {
         IntArray(image.width * image.height).also { image.asAndroidBitmap().getPixels(it, 0, image.width, 0, 0, image.width, image.height) }
@@ -210,46 +210,112 @@ fun Modifier.skinSurface(look: CardLook, c: Colors, shape: Shape, floor: Float =
 }
 
 /**
- * La luz de un cristal líquido, dibujada una vez por tamaño: la luz que le cae de arriba, el grosor del vidrio (una
- * banda suave por dentro de la orilla, clara arriba; en tema claro abajo no lleva nada, o con la sombra de afuera
- * se vería una orilla doble) y el brillo fino de la orilla, que destella en
- * la esquina de arriba a la izquierda y en la de abajo a la derecha y casi se apaga entre ellas. Todo se va conforme
- * la tarjeta se llena ([through] = cuánto queda de cristal). [lit] = sobre tu fondo (el inicio): en Ajustes y
- * paneles, con muchas tarjetas en lista, va a media fuerza.
+ * La luz de un cristal líquido, dibujada una vez por tamaño. La orilla brilla donde mira hacia la luz (arriba a la
+ * izquierda) y, por el reflejo de adentro, donde mira justo al revés (abajo a la derecha); entre ellas casi se apaga
+ * ([rimLight]). En un rectángulo redondeado eso es exacto con poco: cada lado recto lleva una sola fuerza y cada esquina
+ * un degradado en barrido centrado en ELLA (ahí el ángulo del barrido es el de la orilla). Del lado de la luz, además,
+ * un resplandor ancho y suave hacia adentro: el grosor del vidrio. Todo se va conforme la tarjeta se llena ([through] =
+ * cuánto queda de cristal). [lit] = sobre tu fondo (el inicio): en Ajustes y paneles, con muchas tarjetas en lista, va
+ * a media fuerza. (Matemática de la luz por la normal: Kyant0/AndroidLiquidGlass, Apache-2.0, y styropyr0/Prismal, MIT.)
  */
 private fun Modifier.liquidGlass(dark: Boolean, shape: Shape, through: Float, lit: Boolean): Modifier = drawWithCache {
     val k = through * (if (lit) 1f else 0.5f)
     val outline = shape.createOutline(size, layoutDirection, this)
     fun white(a: Float) = Color.White.copy(alpha = (a * k).coerceIn(0f, 1f))
-    fun black(a: Float) = Color.Black.copy(alpha = (a * k).coerceIn(0f, 1f))
-    val light = Brush.verticalGradient(
-        0f to white(if (dark) 0.1f else 0.28f), 0.55f to Color.Transparent, 1f to (if (dark) black(0.1f) else Color.Transparent),
-    )
-    // Cada banda lleva una fracción: sumadas dan un degradado hacia la orilla sin escalones a la vista.
-    val part = 1f / GLASS_DEPTH_STEPS
-    val depth = Brush.verticalGradient(
-        0f to white((if (dark) 0.14f else 0.5f) * part), 0.5f to Color.Transparent,
-        1f to (if (dark) white(0.06f * part) else Color.Transparent),
-    )
-    // El destello va por ángulo desde el centro, con las dos esquinas donde de verdad están (0 = a la derecha, en
-    // el sentido del reloj): así una tarjeta muy ancha no lleva media orilla encendida.
-    val turn = (atan2(size.height, size.width) / (2 * PI)).toFloat().coerceIn(0.02f, 0.2f)
-    val strong = white(if (dark) 0.7f else 1f)
-    val second = white(if (dark) 0.42f else 0.3f)
-    val faint = white(if (dark) 0.06f else 0f)
-    val soft = white(if (dark) 0.16f else 0.55f)
-    val rim = Brush.sweepGradient(
-        0f to faint, turn to second, (turn + 0.25f) / 2 + 0.02f to faint, 0.25f to faint, 0.5f to soft,
-        0.5f + turn to strong, 0.75f to soft, 1f to faint,
-    )
-    // Los trazos van centrados en la orilla: la mitad de afuera la recorta la tarjeta.
-    val bands = List(GLASS_DEPTH_STEPS) { Stroke(GLASS_DEPTH.toPx() * 2 * (it + 1) / GLASS_DEPTH_STEPS) }
-    val line = Stroke(GLASS_RIM.toPx() * 2)
-    onDrawBehind {
-        drawRect(light)
-        for (b in bands) drawOutline(outline, depth, style = b)
-        drawOutline(outline, rim, style = line)
+    val wash = Brush.verticalGradient(0f to white(if (dark) 0.05f else 0.12f), 0.45f to Color.Transparent)
+    val radius = when (outline) {
+        is Outline.Rounded -> outline.roundRect.topLeftCornerRadius.x
+        is Outline.Rectangle -> 0f
+        // Una forma que no es un rectángulo redondeado: solo un filo parejo.
+        else -> return@drawWithCache onDrawBehind {
+            drawRect(wash)
+            drawOutline(outline, white(if (dark) 0.3f else 0.6f), style = Stroke(GLASS_RIM.toPx() * 2))
+        }
+    }.coerceAtMost(minOf(size.width, size.height) / 2)
+    val rim = rimStrokes(size, radius, GLASS_RIM.toPx(), 0f) { nx, ny -> white((if (dark) 0.8f else 1f) * rimLight(nx, ny, if (dark) 0.07f else 0.12f)) }
+    // El resplandor: solo donde la orilla mira a la luz, ancho y tenue.
+    // En tres trazos que se van cerrando hacia la orilla: sumados dan un degradado sin escalón a la vista.
+    val glowWidth = GLASS_GLOW.toPx().coerceAtMost(radius.coerceAtLeast(GLASS_RIM.toPx() * 3))
+    val glow = (1..GLOW_STEPS).flatMap { step ->
+        rimStrokes(size, radius, glowWidth * step / GLOW_STEPS, GLASS_RIM.toPx()) { nx, ny -> white((if (dark) 0.2f else 0.4f) / GLOW_STEPS * litSide(nx, ny)) }
     }
+    onDrawBehind {
+        drawRect(wash)
+        for (g in glow) g.draw(this)
+        for (r in rim) r.draw(this)
+    }
+}
+
+/** Hacia dónde está la luz del cristal (arriba a la izquierda), como vector unitario en pantalla (y hacia abajo). */
+private const val LIGHT_X = -0.6f
+private const val LIGHT_Y = -0.8f
+private const val LIGHT_POWER = 4.5f
+
+/** Cuánto mira a la luz una orilla cuya normal hacia afuera es ([nx], [ny]): 1 = de frente, 0 = de lado o de espaldas. */
+internal fun litSide(nx: Float, ny: Float): Float = (nx * LIGHT_X + ny * LIGHT_Y).coerceAtLeast(0f).pow(LIGHT_POWER)
+
+/**
+ * El brillo fino de la orilla: fuerte de frente a la luz y también de espaldas (el reflejo de adentro), casi nada de
+ * lado; nunca menos que [floor], para que la tarjeta no pierda su orilla.
+ */
+internal fun rimLight(nx: Float, ny: Float, floor: Float): Float {
+    val lobe = abs(nx * LIGHT_X + ny * LIGHT_Y).pow(LIGHT_POWER)
+    return floor + (1f - floor) * lobe
+}
+
+/** Un trazo de la orilla ya armado: un lado recto o el arco de una esquina. */
+private class RimStroke(val brush: Brush, val from: Offset, val to: Offset, val arc: Size?, val start: Float, val stroke: Stroke) {
+    fun draw(scope: androidx.compose.ui.graphics.drawscope.DrawScope) = with(scope) {
+        if (arc == null) drawLine(brush, from, to, stroke.width)
+        else drawArc(brush, start, 90f, useCenter = false, topLeft = from, size = arc, style = stroke)
+    }
+}
+
+/**
+ * La orilla de un rectángulo redondeado de [size] y esquinas [radius] en trazos de [width], metidos [inset] desde el
+ * borde: 4 lados (cada uno con el color de su normal) y 4 esquinas (un barrido centrado en cada una, con [color] en
+ * 7 puntos del cuarto de vuelta). Los lados o esquinas que no llevan nada no se dibujan.
+ */
+private fun rimStrokes(size: Size, radius: Float, width: Float, inset: Float, color: (nx: Float, ny: Float) -> Color): List<RimStroke> {
+    val out = ArrayList<RimStroke>(8)
+    val half = width / 2 + inset
+    val stroke = Stroke(width)
+    val w = size.width
+    val h = size.height
+    fun side(nx: Float, ny: Float, from: Offset, to: Offset) {
+        val c = color(nx, ny)
+        if (c.alpha > 0.004f) out += RimStroke(androidx.compose.ui.graphics.SolidColor(c), from, to, null, 0f, stroke)
+    }
+    side(0f, -1f, Offset(radius, half), Offset(w - radius, half))
+    side(0f, 1f, Offset(radius, h - half), Offset(w - radius, h - half))
+    side(-1f, 0f, Offset(half, radius), Offset(half, h - radius))
+    side(1f, 0f, Offset(w - half, radius), Offset(w - half, h - radius))
+    if (radius <= half) return out
+    val arc = Size(2 * (radius - half), 2 * (radius - half))
+    // Cada esquina: su centro, dónde empieza su cuarto de vuelta (0° = a la derecha, en el sentido del reloj).
+    fun corner(cx: Float, cy: Float, start: Float) {
+        val stops = ArrayList<Pair<Float, Color>>(RIM_STOPS + 3)
+        var any = false
+        for (i in 0..RIM_STOPS) {
+            val deg = start + 90f * i / RIM_STOPS
+            val rad = deg * (PI.toFloat() / 180f)
+            val c = color(kotlin.math.cos(rad), kotlin.math.sin(rad))
+            if (c.alpha > 0.004f) any = true
+            stops += (deg / 360f) to c
+        }
+        if (!any) return
+        // El barrido da la vuelta entera: fuera del cuarto repite sus extremos (no se dibuja ahí).
+        // (La esquina que termina en 360° continúa en 0°: ahí va su último color, sin costura.)
+        val closes = stops.last().first >= 1f
+        if (stops.first().first > 0f) stops.add(0, 0f to (if (closes) stops.last().second else stops.first().second))
+        if (!closes) stops += 1f to stops.last().second
+        out += RimStroke(Brush.sweepGradient(*stops.toTypedArray(), center = Offset(cx, cy)), Offset(cx - radius + half, cy - radius + half), Offset.Zero, arc, start, stroke)
+    }
+    corner(w - radius, h - radius, 0f)
+    corner(radius, h - radius, 90f)
+    corner(radius, radius, 180f)
+    corner(w - radius, radius, 270f)
+    return out
 }
 
 /**
@@ -274,7 +340,18 @@ fun Modifier.glassShadow(look: CardLook, dark: Boolean, radius: Dp, cheap: Boole
             val fade = 1f - i / rings.toFloat()
             ShadowRing(Color.Black.copy(alpha = strength * fade * fade), Offset(-out, -out + drop), Size(size.width + 2 * out, size.height + 2 * out), CornerRadius((r + out).coerceAtLeast(0f)))
         }
-        onDrawBehind { for (s in shapes) drawRoundRect(s.color, s.at, s.size, s.corner, style = stroke) }
+        // El contorno oscuro que separa el cristal de un fondo claro (como el vidrio de iOS): por fuera, fino, más
+        // marcado a los lados que arriba y abajo (ahí ya van la luz y la sombra).
+        val edge = GLASS_EDGE.toPx()
+        val edgeAlpha = if (dark) 0.5f else 0.3f
+        val edgeBrush = Brush.verticalGradient(
+            0f to Color.Black.copy(alpha = edgeAlpha * 0.42f), 0.12f to Color.Black.copy(alpha = edgeAlpha),
+            0.88f to Color.Black.copy(alpha = edgeAlpha), 1f to Color.Black.copy(alpha = edgeAlpha * 0.42f),
+        )
+        onDrawBehind {
+            for (s in shapes) drawRoundRect(s.color, s.at, s.size, s.corner, style = stroke)
+            drawRoundRect(edgeBrush, Offset(-edge / 2, -edge / 2), Size(size.width + edge, size.height + edge), CornerRadius(r + edge / 2), style = Stroke(edge))
+        }
     }
 }
 
@@ -313,8 +390,8 @@ fun Modifier.blurredBackdrop(b: CardBackdrop, lens: Shape? = null): Modifier = c
                 else -> return@collectLatest
             }
             delay(LENS_SETTLE_MS)
-            val depth = with(density) { LENS_DEPTH.toPx() }
-            val image = withContext(Dispatchers.Default) { refracted(b, where, window, size, radius, depth) }
+            val (depth, push, inner) = with(density) { Triple(LENS_DEPTH.toPx(), LENS_PUSH.toPx(), INNER_SHADOW.toPx()) }
+            val image = withContext(Dispatchers.Default) { refracted(b, where, window, size, radius, depth, push, inner) }
             bent = Bent(image, size)
         }
     }
@@ -343,31 +420,40 @@ fun Modifier.blurredBackdrop(b: CardBackdrop, lens: Shape? = null): Modifier = c
 private class Bent(val image: ImageBitmap, val size: Size)
 
 /**
- * La parte de [b] que cae bajo una tarjeta de [size] en [at] (ventana de [root]), vista a través de un cristal de
- * esquinas [radius]: al centro, tal cual; en una franja de [depth] junto a la orilla, cada punto toma el fondo de más
- * adentro, cada vez más conforme se acerca a la orilla (perfil de un canto redondo), hasta verse reflejado: lo que
- * hace que un vidrio grueso se note sobre cualquier fondo. A media resolución (el fondo ya viene suave). Correr fuera
- * del hilo principal.
+ * La parte de [b] que cae bajo una tarjeta de [size] en [at] (ventana de [root]), vista a través de un cristal grueso
+ * de esquinas [radius]. Al centro, tu fondo desenfocado tal cual. En el canto (una franja de [depth] junto a la orilla)
+ * cada punto toma el fondo de más adentro, hasta [push], con la compresión pegada al borde de un vidrio de verdad
+ * ([LENS_PROFILE]); y lo toma de la copia NÍTIDA ([CardBackdrop.sharp]): un fondo ya desenfocado doblado no se nota, uno
+ * con detalle sí. Cada color se dobla un poco distinto ([LENS_DISPERSION]: el filo prismático). Encima, la sombra
+ * interior ([inner] de ancho) que despega la orilla, y un grano mínimo contra las bandas. Correr fuera del hilo
+ * principal. (Perfil y dispersión: Kyant0/AndroidLiquidGlass, Apache-2.0, y styropyr0/Prismal, MIT.)
  */
-internal fun refracted(b: CardBackdrop, at: Offset, root: Size, size: Size, radius: Float, depth: Float): ImageBitmap {
+internal fun refracted(b: CardBackdrop, at: Offset, root: Size, size: Size, radius: Float, depth: Float, push: Float, inner: Float): ImageBitmap {
     val iw = b.image.width
     val ih = b.image.height
     val src = b.pixels
     val cover = maxOf(root.width / iw, root.height / ih)
     val left = (root.width - iw * cover) / 2
     val top = (root.height - ih * cover) / 2
-    val w = (size.width * LENS_SCALE).toInt().coerceAtLeast(1)
-    val h = (size.height * LENS_SCALE).toInt().coerceAtLeast(1)
+    // La copia nítida cubre la ventana igual, con su propio tamaño.
+    val fine = b.sharp
+    val fineCover = if (fine != null) maxOf(root.width / fine.w, root.height / fine.h) else 1f
+    val fineLeft = if (fine != null) (root.width - fine.w * fineCover) / 2 else 0f
+    val fineTop = if (fine != null) (root.height - fine.h * fineCover) / 2 else 0f
+    // Con detalle fino el canto pide más resolución; una tarjeta enorme baja la suya para no pasar de [LENS_MAX_PIXELS].
+    val scale = minOf(LENS_SCALE, sqrt(LENS_MAX_PIXELS / (size.width * size.height).coerceAtLeast(1f)))
+    val w = (size.width * scale).toInt().coerceAtLeast(1)
+    val h = (size.height * scale).toInt().coerceAtLeast(1)
     val out = IntArray(w * h)
     val halfW = size.width / 2
     val halfH = size.height / 2
     val r = radius.coerceAtMost(minOf(halfW, halfH))
     val reach = depth.coerceAtMost(minOf(halfW, halfH))
-    val push = reach * LENS_PUSH
+    val shade = inner.coerceAtLeast(1f)
     for (y in 0 until h) {
-        val py = (y + 0.5f) / LENS_SCALE
+        val py = (y + 0.5f) / scale
         for (x in 0 until w) {
-            val px = (x + 0.5f) / LENS_SCALE
+            val px = (x + 0.5f) / scale
             // Distancia a la orilla del rectángulo redondeado (hacia adentro) y hacia dónde queda el centro.
             val qx = abs(px - halfW) - (halfW - r)
             val qy = abs(py - halfH) - (halfH - r)
@@ -386,18 +472,51 @@ internal fun refracted(b: CardBackdrop, at: Offset, root: Size, size: Size, radi
                 inside = -qy + r
                 ny = 1f
             }
-            var sx = px
-            var sy = py
+            var color = sample(src, iw, ih, (at.x + px - left) / cover - 0.5f, (at.y + py - top) / cover - 0.5f)
             if (inside < reach) {
-                val t = 1f - (inside / reach).coerceIn(0f, 1f)
-                val bend = push * (1f - sqrt(1f - t * t))
-                sx -= (if (px < halfW) -nx else nx) * bend
-                sy -= (if (py < halfH) -ny else ny) * bend
+                val slope = LENS_PROFILE[((inside / reach).coerceIn(0f, 1f) * (LENS_PROFILE.size - 1)).toInt()]
+                val dx = -(if (px < halfW) -nx else nx) * push * slope
+                val dy = -(if (py < halfH) -ny else ny) * push * slope
+                val bent = if (fine != null) {
+                    val spread = LENS_DISPERSION * slope
+                    fun at(k: Float) = sample(fine.px, fine.w, fine.h, (at.x + px + dx * k - fineLeft) / fineCover - 0.5f, (at.y + py + dy * k - fineTop) / fineCover - 0.5f)
+                    (0xFF shl 24) or (at(1f - spread) and 0xFF0000) or (at(1f) and 0xFF00) or (at(1f + spread) and 0xFF)
+                } else sample(src, iw, ih, (at.x + px + dx - left) / cover - 0.5f, (at.y + py + dy - top) / cover - 0.5f)
+                // Nítido en casi toda la franja y se funde con el centro esmerilado en su último tramo.
+                val t = (inside / reach).coerceIn(0f, 1f)
+                color = mix(color, bent, 1f - smooth(LENS_CLEAR, 1f, t))
             }
-            out[y * w + x] = sample(src, iw, ih, (at.x + sx - left) / cover - 0.5f, (at.y + sy - top) / cover - 0.5f)
+            if (inside < shade) {
+                val t = 1f - (inside / shade).coerceIn(0f, 1f)
+                color = mix(color, 0xFF000000.toInt(), INNER_SHADOW_ALPHA * t * t)
+            }
+            out[y * w + x] = grained(color, x, y)
         }
     }
     return Bitmap.createBitmap(out, w, h, Bitmap.Config.ARGB_8888).asImageBitmap()
+}
+
+/** La compresión del canto: 1 en la orilla, ¼ a un cuarto de la franja y 0 donde termina (64 valores). */
+private val LENS_PROFILE = FloatArray(64) { i ->
+    val t = i / 63f
+    val floor = 1f / 25f
+    ((1f / ((1f + 4f * t) * (1f + 4f * t))) - floor) / (1f - floor)
+}
+
+/** [a] con [amount] (0–1) de [b], canal por canal. */
+private fun mix(a: Int, b: Int, amount: Float): Int {
+    val k = (amount.coerceIn(0f, 1f) * 256).toInt()
+    fun ch(shift: Int) = (((a shr shift) and 0xFF) * (256 - k) + ((b shr shift) and 0xFF) * k) shr 8
+    return (0xFF shl 24) or (ch(16) shl 16) or (ch(8) shl 8) or ch(0)
+}
+
+/** [p] con un grano fijo de ±[GRAIN] niveles según su lugar: rompe las bandas de un degradado suave. */
+private fun grained(p: Int, x: Int, y: Int): Int {
+    var v = x * 374761393 + y * 668265263
+    v = (v xor (v ushr 13)) * 1274126177
+    val n = ((v xor (v ushr 16)) and 0xFF) * (2 * GRAIN + 1) / 256 - GRAIN
+    fun ch(shift: Int) = (((p shr shift) and 0xFF) + n).coerceIn(0, 255)
+    return (0xFF shl 24) or (ch(16) shl 16) or (ch(8) shl 8) or ch(0)
 }
 
 /** El color de [src] en ([x], [y]) entre sus cuatro pixeles vecinos (orillas repetidas). */
@@ -423,14 +542,17 @@ private fun sample(src: IntArray, w: Int, h: Int, x: Float, y: Float): Int {
 }
 
 /** Tu fondo ya desenfocado y sus extremos: el color de su cuarta parte más clara ([light]) y de la más oscura ([shade]). */
-class Blurred(val image: ImageBitmap, val light: Color, val shade: Color)
+class Blurred(val image: ImageBitmap, val light: Color, val shade: Color, val sharp: Pixels? = null)
+
+/** Los pixeles de una imagen y su tamaño (la copia nítida de tu fondo que se dobla en el canto del cristal). */
+class Pixels(val px: IntArray, val w: Int, val h: Int)
 
 /**
  * Una copia chica y desenfocada de [src] para el vidrio (unos 96 px de ancho; al dibujarse en grande con filtro queda
  * suave). Tres pasadas de caja ≈ desenfoque gaussiano. [vivid] = para el cristal: menos desenfoque (más ancha) y los
  * colores un poco más vivos, que es lo que se ve a través. Correr fuera del hilo principal.
  */
-fun blurredCopy(src: Bitmap, vivid: Boolean = false): Blurred {
+fun blurredCopy(src: Bitmap, vivid: Boolean = false, sharp: Boolean = false): Blurred {
     val w = if (vivid) CLEAR_WIDTH else BLUR_WIDTH
     val h = (src.height * w / src.width.coerceAtLeast(1)).coerceAtLeast(1)
     val small = Bitmap.createScaledBitmap(src, w, h, true)
@@ -445,7 +567,25 @@ fun blurredCopy(src: Bitmap, vivid: Boolean = false): Blurred {
     val out = Bitmap.createBitmap(px, w, h, Bitmap.Config.ARGB_8888)
     if (small !== src) small.recycle()
     val (light, shade) = extremes(px)
-    return Blurred(out.asImageBitmap(), light, shade)
+    return Blurred(out.asImageBitmap(), light, shade, if (sharp) sharpCopy(src) else null)
+}
+
+/**
+ * Tu fondo casi nítido (hasta [SHARP_WIDTH] de ancho, una pasada de caja mínima contra el dentado) y con el color vivo
+ * del cristal: lo que el canto dobla. Unos 2 MB, compartidos por todas las tarjetas; no se hace en equipos de poca memoria.
+ */
+private fun sharpCopy(src: Bitmap): Pixels {
+    val w = minOf(src.width, SHARP_WIDTH).coerceAtLeast(1)
+    val h = (src.height * w / src.width.coerceAtLeast(1)).coerceAtLeast(1)
+    val small = if (w == src.width) src else Bitmap.createScaledBitmap(src, w, h, true)
+    val px = IntArray(w * h)
+    small.getPixels(px, 0, w, 0, 0, w, h)
+    if (small !== src) small.recycle()
+    val tmp = IntArray(px.size)
+    boxBlur(px, tmp, w, h, 1, horizontal = true)
+    boxBlur(tmp, px, w, h, 1, horizontal = false)
+    for (i in px.indices) px[i] = livelier(px[i])
+    return Pixels(px, w, h)
 }
 
 /** Los extremos de [px]: el promedio de su cuarta parte más clara y el de la más oscura. */
@@ -484,14 +624,28 @@ internal fun average(px: List<Int>): Color {
     return Color((r / n).toInt(), (g / n).toInt(), (b / n).toInt())
 }
 
-/** Un pixel con los colores más vivos ([VIVID_SATURATION]) y apenas más claro, para lo que se ve a través del cristal. */
-private fun livelier(p: Int): Int {
+/**
+ * Un pixel con los colores más vivos y apenas más claro, para lo que se ve a través del cristal. Con curva: lo que ya
+ * viene muy saturado o muy claro casi no se toca (no se quema ni se vuelve neón); lo apagado es lo que más sube.
+ */
+internal fun livelier(p: Int): Int {
     val r = (p shr 16) and 0xFF
     val g = (p shr 8) and 0xFF
     val b = p and 0xFF
     val gray = (2126 * r + 7152 * g + 722 * b) / 10000f
-    fun ch(v: Int) = ((gray + (v - gray) * VIVID_SATURATION) * VIVID_BRIGHTNESS).toInt().coerceIn(0, 255)
+    val spread = (maxOf(r, g, b) - minOf(r, g, b)) / 255f
+    val room = 1f - smooth(0.2f, 0.85f, spread)
+    val headroom = 1f - smooth(0.75f, 0.98f, gray / 255f)
+    val amount = 1f + (VIVID_SATURATION - 1f) * (0.3f + 0.7f * room * headroom)
+    val lift = 1f + (VIVID_BRIGHTNESS - 1f) * headroom
+    fun ch(v: Int) = ((gray + (v - gray) * amount) * lift).toInt().coerceIn(0, 255)
     return (p and 0xFF000000.toInt()) or (ch(r) shl 16) or (ch(g) shl 8) or ch(b)
+}
+
+/** 0 hasta [from], 1 desde [to], suave entre ellos. */
+private fun smooth(from: Float, to: Float, x: Float): Float {
+    val t = ((x - from) / (to - from)).coerceIn(0f, 1f)
+    return t * t * (3f - 2f * t)
 }
 
 /** Un promedio de caja de radio [r] a lo ancho o a lo alto, de [from] a [to] (orillas repetidas). */
@@ -521,26 +675,40 @@ const val MIN_OPACITY = 0.45f
 private const val BLUR_WIDTH = 96
 /** El cristal desenfoca menos: la copia es más ancha (mismo radio). */
 private const val CLEAR_WIDTH = 480
-private const val VIVID_SATURATION = 1.9f
-private const val VIVID_BRIGHTNESS = 1.12f
+private const val VIVID_SATURATION = 1.6f
+private const val VIVID_BRIGHTNESS = 1.1f
+/** Lo más ancha que va la copia nítida de tu fondo (la que se dobla en el canto). */
+private const val SHARP_WIDTH = 960
 /** Lo más cerrado que llega el velo detrás de un cristal (y el de tu fondo en el inicio). */
 private const val VEIL_MAX = 0.9f
 /** Contraste mínimo de lo que va sin tarjeta sobre el color medio de tu fondo (texto grande y en negritas). */
 private const val PLAIN_CONTRAST = 3f
 /** Puntos por lado con que se saca el color medio de tu fondo. */
 private const val MEAN_SAMPLES = 64
-/** El canto del cristal que dobla tu fondo: cuánto entra desde la orilla y cuánto lo empuja (en cantos; > 1 lo refleja). */
-private val LENS_DEPTH = 26.dp
-private const val LENS_PUSH = 1.6f
-/** A qué fracción del tamaño de la tarjeta se calcula el fondo doblado. */
-private const val LENS_SCALE = 0.5f
+/** El canto del cristal que dobla tu fondo: cuánto entra desde la orilla y hasta cuánto empuja lo que se ve. */
+private val LENS_DEPTH = 30.dp
+private val LENS_PUSH = 40.dp
+/** Hasta qué fracción de la franja el canto va del todo nítido; de ahí al centro se funde con el esmerilado. */
+private const val LENS_CLEAR = 0.45f
+/** Cuánto más (el azul) o menos (el rojo) se dobla cada color en la orilla: el filo prismático. */
+private const val LENS_DISPERSION = 0.12f
+/** A qué fracción del tamaño de la tarjeta se calcula el fondo doblado, y su tope de pixeles (≈ 1.6 MB por tarjeta). */
+private const val LENS_SCALE = 0.75f
+private const val LENS_MAX_PIXELS = 400_000f
 /** Cuánto debe estar quieta la tarjeta para doblar su fondo (al arrastrarla o deslizar la página va el de antes). */
 private const val LENS_SETTLE_MS = 90L
-/** El grosor del cristal: hasta dónde entra desde la orilla y en cuántas bandas se dibuja. */
-private val GLASS_DEPTH = 12.dp
-private const val GLASS_DEPTH_STEPS = 8
-/** El brillo fino de la orilla del cristal. */
+/** La sombra interior de la orilla: qué tan adentro llega y qué tan oscura es justo en el borde. */
+private val INNER_SHADOW = 9.dp
+private const val INNER_SHADOW_ALPHA = 0.16f
+/** El grano del fondo doblado, en niveles de 0–255 hacia cada lado. */
+private const val GRAIN = 3
+/** El brillo fino de la orilla del cristal, el resplandor del lado de la luz y el contorno oscuro de afuera. */
 private val GLASS_RIM = 1.dp
+private val GLASS_GLOW = 10.dp
+private val GLASS_EDGE = 0.7.dp
+/** En cuántos pasos se arma el degradado de la orilla en cada esquina. */
+private const val RIM_STOPS = 6
+private const val GLOW_STEPS = 3
 /** La sombra del cristal: hasta dónde llega, en cuántos aros y cuánto cae. */
 private val SHADOW_SPREAD = 24.dp
 private const val SHADOW_RINGS = 16

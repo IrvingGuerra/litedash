@@ -561,12 +561,15 @@ private fun rememberLegibleFloor(image: ImageBitmap?): Float {
 @Composable
 private fun rememberBlurredWallpaper(wanted: Boolean, clear: Boolean): Pair<ImageBitmap, Blurred>? {
     val image = if (wanted) rememberImage(WALLPAPER).image else null
+    // La copia nítida que el canto del cristal dobla: solo para el cristal y con memoria de sobra.
+    val context = LocalContext.current
+    val sharp = clear && !lowMemoryDevice(context)
     // Lo comparten el inicio, Ajustes y lo que se abre en grande.
     val cached = if (clear) clearWallpaper else blurredWallpaper
     val blurred by produceState(cached?.takeIf { it.first === image }, image, clear) {
         value = image?.let { src ->
             (if (clear) clearWallpaper else blurredWallpaper)?.takeIf { it.first === src }
-                ?: (src to withContext(Dispatchers.Default) { blurredCopy(src.asAndroidBitmap(), vivid = clear) })
+                ?: (src to withContext(Dispatchers.Default) { blurredCopy(src.asAndroidBitmap(), vivid = clear, sharp = sharp) })
                     .also { if (clear) clearWallpaper = it else blurredWallpaper = it }
         }
     }
@@ -593,7 +596,7 @@ fun rememberWallpaperBackdrop(wanted: Boolean, dim: () -> Float): CardBackdrop? 
         val extreme = if (c.dark) lerp(b.light, Color.White, GLASS_GUARD) else lerp(b.shade, Color.Black, GLASS_GUARD)
         var lastDim = Float.NaN
         var veil = 0f
-        CardBackdrop(b.image) {
+        CardBackdrop(b.image, b.sharp) {
             // Detrás del cristal tu fondo va menos oscurecido que afuera ([GLASS_LIFT]): la tarjeta se ve con luz propia.
             val base = maxOf(currentDim(), floor) * GLASS_LIFT
             if (base != lastDim) {
