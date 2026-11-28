@@ -23,7 +23,7 @@ class ProfileInitOrderTest {
 
     @Test
     fun anyClassCanBeTheFirstToStart() {
-        for (first in listOf("BroadcastMeta", "FactoryBluetoothKind", "AutochipsBluetooth", "GenericBluetooth", "HeadUnit", "FactoryBluetoothKt")) {
+        for (first in listOf("BroadcastMeta", "FactoryBluetoothKind", "AutochipsBluetooth", "GenericBluetooth", "AndroidAvrcpBluetooth", "HeadUnit", "FactoryBluetoothKt")) {
             val loader = freshLoader()
             Class.forName("$pkg.$first", true, loader)
             if (first == "BroadcastMeta") {

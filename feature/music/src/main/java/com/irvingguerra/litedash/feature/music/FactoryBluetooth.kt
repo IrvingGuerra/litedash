@@ -1,5 +1,8 @@
 package com.irvingguerra.litedash.feature.music
 
+import android.media.MediaMetadata
+import android.media.session.PlaybackState
+
 /**
  * Un perfil de Bluetooth de fábrica: lo que LiteDash sabe de una familia de apps de Bluetooth (chip propio, no el de
  * Android), gemelo de [FactoryRadioKind]. El motor le pregunta lo mismo a todos: quién es ([apps]), cómo se hace sonar
@@ -58,8 +61,11 @@ internal abstract class FactoryBluetoothKind(
         fun forFamily(family: HeadUnit): FactoryBluetoothKind =
             all.firstOrNull { it.family == family && it.family != HeadUnit.GENERIC } ?: GenericBluetooth
 
+        /** Los perfiles que leen avisos con claves propias: los de marca y el AVRCP de Android. */
+        val withBroadcasts: List<FactoryBluetoothKind> get() = all + AndroidAvrcpBluetooth
+
         /** Quién lee cada aviso con claves propias ([broadcasts]). */
-        val readers: Map<String, FactoryBluetoothKind> by lazy { all.flatMap { k -> k.broadcasts.map { it to k } }.toMap() }
+        val readers: Map<String, FactoryBluetoothKind> by lazy { withBroadcasts.flatMap { k -> k.broadcasts.map { it to k } }.toMap() }
 
         /** El perfil al que pertenece la app [pkg]; null si no es de marca. */
         fun ofPackage(pkg: String): FactoryBluetoothKind? = all.firstOrNull { k -> k.apps.any { it.pkg == pkg } }
@@ -72,8 +78,49 @@ internal class BrandBluetooth(val pkg: String, val family: HeadUnit, val music: 
 /** Todas las apps de marca en orden de prioridad, aplanando los perfiles (lo que leen [HeadUnit.detect] y las listas). */
 internal val BRAND_BLUETOOTH: List<BrandBluetooth> = FactoryBluetoothKind.all.flatMap { it.apps }
 
-/** El Bluetooth de Android, sin chip propio (la mayoría): sin recetas propias. */
+/** Sin perfil de marca: el Bluetooth de Android, sin chip propio (la mayoría); sin recetas propias. */
 internal object GenericBluetooth : FactoryBluetoothKind("generic", HeadUnit.GENERIC)
+
+/**
+ * El AVRCP de Android (el celular por el Bluetooth de Android, en cualquier pantalla que lo traiga): no es una app de marca
+ * (no va en [FactoryBluetoothKind.all]) ni una familia. Aquí, su aviso de la canción; su sesión y sus paquetes viven en
+ * [BluetoothAvrcp].
+ */
+internal object AndroidAvrcpBluetooth : FactoryBluetoothKind("android", HeadUnit.GENERIC) {
+    // Android 5–8: manda MediaMetadata y PlaybackState, no textos (idea de AvrcpMeta de StradaOS, GPL-3.0).
+    private const val PROFILE = "android.bluetooth.avrcp-controller.profile."
+    const val TRACK_EVENT = PROFILE + "action.TRACK_EVENT"
+    private const val EXTRA_METADATA = PROFILE + "extra.METADATA"
+    private const val EXTRA_PLAYBACK = PROFILE + "extra.PLAYBACK"
+    private val TITLE_KEYS = arrayOf(MediaMetadata.METADATA_KEY_TITLE, MediaMetadata.METADATA_KEY_DISPLAY_TITLE)
+    private val ARTIST_KEYS = arrayOf(
+        MediaMetadata.METADATA_KEY_ARTIST, MediaMetadata.METADATA_KEY_ALBUM_ARTIST, MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE,
+    )
+
+    /** Los textos de un MediaMetadata que se copian al leer el aviso (ver `toMap`). */
+    val METADATA_KEYS = (TITLE_KEYS + ARTIST_KEYS).toList()
+
+    override val broadcasts = listOf(TRACK_EVENT)
+
+    /**
+     * Con los objetos ya pasados a mapa (canción) y número (estado); cada aviso puede traer uno solo. Sin nada de eso
+     * (alguna ROM lo manda con textos), null: sigue la lectura de cualquier aviso.
+     */
+    override fun readBroadcast(action: String, extras: Map<String, Any?>): BroadcastMeta? {
+        @Suppress("UNCHECKED_CAST")
+        val song = extras[EXTRA_METADATA] as? Map<String, Any?>
+        val playing = when (extras[EXTRA_PLAYBACK] as? Int) {
+            PlaybackState.STATE_PLAYING -> true
+            PlaybackState.STATE_PAUSED, PlaybackState.STATE_STOPPED -> false
+            else -> null
+        }
+        val meta = BroadcastMeta(
+            title = song?.text(*TITLE_KEYS), artist = song?.text(*ARTIST_KEYS),
+            playing = playing, pkg = null, bluetooth = true,
+        )
+        return meta.takeIf { it.title != null || it.artist != null || it.playing != null }
+    }
+}
 
 internal object FytBluetooth : FactoryBluetoothKind(
     "fyt", HeadUnit.FYT,

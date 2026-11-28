@@ -69,7 +69,7 @@ class FactoryBluetoothTest {
     @Test
     fun everyBroadcastAProfileReadsIsListenedTo() {
         // Lo que lee un perfil con sus claves debe estar en los avisos que escucha el receptor (y no repetirse entre perfiles).
-        val read = FactoryBluetoothKind.all.flatMap { it.broadcasts }
+        val read = FactoryBluetoothKind.withBroadcasts.flatMap { it.broadcasts }
         assertEquals(read.distinct(), read)
         for (action in read) assertEquals(action, true, action in BroadcastMeta.ACTIONS)
     }

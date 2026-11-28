@@ -1,8 +1,5 @@
 package com.irvingguerra.litedash.feature.music
 
-import android.media.MediaMetadata
-import android.media.session.PlaybackState
-
 /**
  * Lo que suena según un aviso (broadcast) de otra app: las de Bluetooth de muchas pantallas
  * chinas no publican sesión de medios pero sí avisan la canción así. Campos null = el aviso no
@@ -31,17 +28,6 @@ data class BroadcastMeta(
 
     companion object {
         private const val POWERAMP = "com.maxmpz.audioplayer"
-        // AVRCP de Android (5–8): manda MediaMetadata y PlaybackState, no textos (idea de AvrcpMeta de StradaOS, GPL-3.0).
-        private const val AVRCP_ANDROID = "android.bluetooth.avrcp-controller.profile."
-        private const val TRACK_EVENT = AVRCP_ANDROID + "action.TRACK_EVENT"
-        private const val EXTRA_METADATA = AVRCP_ANDROID + "extra.METADATA"
-        private const val EXTRA_PLAYBACK = AVRCP_ANDROID + "extra.PLAYBACK"
-        private val TITLE_KEYS = arrayOf(MediaMetadata.METADATA_KEY_TITLE, MediaMetadata.METADATA_KEY_DISPLAY_TITLE)
-        private val ARTIST_KEYS = arrayOf(
-            MediaMetadata.METADATA_KEY_ARTIST, MediaMetadata.METADATA_KEY_ALBUM_ARTIST, MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE,
-        )
-        /** Los textos de un MediaMetadata que se copian al leer el aviso (ver `toMap`). */
-        val METADATA_KEYS = (TITLE_KEYS + ARTIST_KEYS).toList()
 
         /** Avisos conocidos (lista de StradaOS, GPL-3.0): reproductores comunes y apps BT de pantallas. */
         val ACTIONS = listOf(
@@ -61,7 +47,7 @@ data class BroadcastMeta(
             "com.samsung.sec.android.MusicPlayer.metachanged", "com.nullsoft.winamp.metachanged",
             "org.videolan.vlc.metachanged",
             // Bluetooth (AVRCP) de Android y de pantallas chinas
-            TRACK_EVENT,
+            AndroidAvrcpBluetooth.TRACK_EVENT,
             "com.android.bluetooth.a2dpsink.action.METADATA_CHANGED",
             "com.android.music.bluetooth.metachanged",
             "com.microntek.music.report", "com.microntek.bt.report",
@@ -75,9 +61,8 @@ data class BroadcastMeta(
 
         /** Lee un aviso; null si no dice nada útil (ni canción ni estado). */
         fun parse(action: String, extras: Map<String, Any?>): BroadcastMeta? {
-            // Si alguna ROM lo manda con textos, sigue la lectura genérica.
-            if (action == TRACK_EVENT) trackEvent(extras)?.let { return it }
-            // Los avisos con claves de una marca los lee su perfil de Bluetooth; los demás, con las claves de siempre.
+            // Los avisos con claves propias los lee su perfil de Bluetooth; los demás (o si el perfil no halla nada suyo), con
+            // las claves de siempre.
             // Poweramp (PowerampAPI, build 948+): la canción en `title`/`artist` sueltos (además del Bundle `track`) y el
             // estado como `paused`; no dice su paquete.
             val meta = FactoryBluetoothKind.readers[action]?.readBroadcast(action, extras) ?: BroadcastMeta(
@@ -87,22 +72,6 @@ data class BroadcastMeta(
                     ?: (extras["paused"] as? Boolean)?.not(),
                 pkg = extras.text("package", "packageName", "pkg") ?: POWERAMP.takeIf { action.startsWith("$it.") },
                 bluetooth = isBluetooth(action),
-            )
-            return meta.takeIf { it.title != null || it.artist != null || it.playing != null }
-        }
-
-        /** TRACK_EVENT con los objetos ya pasados a mapa (canción) y número (estado); cada aviso puede traer uno solo. */
-        private fun trackEvent(extras: Map<String, Any?>): BroadcastMeta? {
-            @Suppress("UNCHECKED_CAST")
-            val song = extras[EXTRA_METADATA] as? Map<String, Any?>
-            val playing = when (extras[EXTRA_PLAYBACK] as? Int) {
-                PlaybackState.STATE_PLAYING -> true
-                PlaybackState.STATE_PAUSED, PlaybackState.STATE_STOPPED -> false
-                else -> null
-            }
-            val meta = BroadcastMeta(
-                title = song?.text(*TITLE_KEYS), artist = song?.text(*ARTIST_KEYS),
-                playing = playing, pkg = null, bluetooth = true,
             )
             return meta.takeIf { it.title != null || it.artist != null || it.playing != null }
         }
