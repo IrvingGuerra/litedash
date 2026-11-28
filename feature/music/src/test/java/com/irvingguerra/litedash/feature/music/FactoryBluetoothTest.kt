@@ -46,4 +46,13 @@ class FactoryBluetoothTest {
         assertSame(GenericBluetooth, FactoryBluetoothKind.forFamily(HeadUnit.HCN))
         assertNull(FactoryBluetoothKind.ofPackage("com.android.bluetooth"))
     }
+
+    @Test
+    fun androidAvrcpWinsThenTheLinkedAppThenTheBrandOne() {
+        // Fijado antes de mover marcas (inventario P0, Q20): no cambiar sin OK de Irving.
+        assertEquals("com.android.bluetooth", bluetoothAppOf("com.android.bluetooth", "com.spd.bt", "com.tw.bt"))
+        assertEquals("com.spd.bt", bluetoothAppOf(null, "com.spd.bt", "com.tw.bt"))
+        assertEquals("com.tw.bt", bluetoothAppOf(null, null, "com.tw.bt"))
+        assertNull(bluetoothAppOf(null, null, null))
+    }
 }

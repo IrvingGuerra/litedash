@@ -395,3 +395,10 @@ internal fun phoneStep(
  */
 internal fun openCandidates(controller: String?, song: String?, modeApp: String?, factory: String?): List<String> =
     listOf(controller, song, modeApp, factory).mapNotNull { it?.ifEmpty { null } }.distinct()
+
+/**
+ * La app de la fuente Bluetooth: el servicio AVRCP del Bluetooth de Android gana ([avrcp]), luego la enlazada a mano
+ * ([linked]) y al final la de marca instalada ([known]). El orden importa: la fuente 8 de TopWay solo se ofrece si sale
+ * `com.tw.bt` (en una TopWay con AVRCP de Android no se ofrece; riesgo 1 del inventario de perfiles, sin cambiar).
+ */
+internal fun bluetoothAppOf(avrcp: String?, linked: String?, known: String?): String? = avrcp ?: linked ?: known

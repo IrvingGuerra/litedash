@@ -1,0 +1,611 @@
+com.android.music.metachanged | vacío | null
+com.android.music.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.android.music.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.android.music.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.android.music.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.android.music.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.android.music.metachanged | autochips-media | null
+com.android.music.metachanged | autochips-estado | null
+com.android.music.metachanged | autochips-pausa | null
+com.android.music.metachanged | clw-bt | null
+com.android.music.metachanged | clw-usb | null
+com.android.music.metachanged | track-event | null
+com.android.music.metachanged | track-event-pausa | null
+com.android.music.playstatechanged | vacío | null
+com.android.music.playstatechanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.android.music.playstatechanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.android.music.playstatechanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.android.music.playstatechanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.android.music.playstatechanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.android.music.playstatechanged | autochips-media | null
+com.android.music.playstatechanged | autochips-estado | null
+com.android.music.playstatechanged | autochips-pausa | null
+com.android.music.playstatechanged | clw-bt | null
+com.android.music.playstatechanged | clw-usb | null
+com.android.music.playstatechanged | track-event | null
+com.android.music.playstatechanged | track-event-pausa | null
+com.spotify.music.metadatachanged | vacío | null
+com.spotify.music.metadatachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.spotify.music.metadatachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.spotify.music.metadatachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.spotify.music.metadatachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.spotify.music.metadatachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.spotify.music.metadatachanged | autochips-media | null
+com.spotify.music.metadatachanged | autochips-estado | null
+com.spotify.music.metadatachanged | autochips-pausa | null
+com.spotify.music.metadatachanged | clw-bt | null
+com.spotify.music.metadatachanged | clw-usb | null
+com.spotify.music.metadatachanged | track-event | null
+com.spotify.music.metadatachanged | track-event-pausa | null
+com.spotify.music.playbackstatechanged | vacío | null
+com.spotify.music.playbackstatechanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.spotify.music.playbackstatechanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.spotify.music.playbackstatechanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.spotify.music.playbackstatechanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.spotify.music.playbackstatechanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.spotify.music.playbackstatechanged | autochips-media | null
+com.spotify.music.playbackstatechanged | autochips-estado | null
+com.spotify.music.playbackstatechanged | autochips-pausa | null
+com.spotify.music.playbackstatechanged | clw-bt | null
+com.spotify.music.playbackstatechanged | clw-usb | null
+com.spotify.music.playbackstatechanged | track-event | null
+com.spotify.music.playbackstatechanged | track-event-pausa | null
+com.tbig.playerpro.metachanged | vacío | null
+com.tbig.playerpro.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.tbig.playerpro.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.tbig.playerpro.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.tbig.playerpro.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.tbig.playerpro.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.tbig.playerpro.metachanged | autochips-media | null
+com.tbig.playerpro.metachanged | autochips-estado | null
+com.tbig.playerpro.metachanged | autochips-pausa | null
+com.tbig.playerpro.metachanged | clw-bt | null
+com.tbig.playerpro.metachanged | clw-usb | null
+com.tbig.playerpro.metachanged | track-event | null
+com.tbig.playerpro.metachanged | track-event-pausa | null
+com.tbig.playerpro.playstatechanged | vacío | null
+com.tbig.playerpro.playstatechanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.tbig.playerpro.playstatechanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.tbig.playerpro.playstatechanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.tbig.playerpro.playstatechanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.tbig.playerpro.playstatechanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.tbig.playerpro.playstatechanged | autochips-media | null
+com.tbig.playerpro.playstatechanged | autochips-estado | null
+com.tbig.playerpro.playstatechanged | autochips-pausa | null
+com.tbig.playerpro.playstatechanged | clw-bt | null
+com.tbig.playerpro.playstatechanged | clw-usb | null
+com.tbig.playerpro.playstatechanged | track-event | null
+com.tbig.playerpro.playstatechanged | track-event-pausa | null
+com.maxmpz.audioplayer.TRACK_CHANGED | vacío | null
+com.maxmpz.audioplayer.TRACK_CHANGED | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.maxmpz.audioplayer.TRACK_CHANGED | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=com.maxmpz.audioplayer, bluetooth=false)
+com.maxmpz.audioplayer.TRACK_CHANGED | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=com.maxmpz.audioplayer, bluetooth=false)
+com.maxmpz.audioplayer.TRACK_CHANGED | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=com.maxmpz.audioplayer, bluetooth=false)
+com.maxmpz.audioplayer.TRACK_CHANGED | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=com.maxmpz.audioplayer, bluetooth=false)
+com.maxmpz.audioplayer.TRACK_CHANGED | autochips-media | null
+com.maxmpz.audioplayer.TRACK_CHANGED | autochips-estado | null
+com.maxmpz.audioplayer.TRACK_CHANGED | autochips-pausa | null
+com.maxmpz.audioplayer.TRACK_CHANGED | clw-bt | null
+com.maxmpz.audioplayer.TRACK_CHANGED | clw-usb | null
+com.maxmpz.audioplayer.TRACK_CHANGED | track-event | null
+com.maxmpz.audioplayer.TRACK_CHANGED | track-event-pausa | null
+com.maxmpz.audioplayer.STATUS_CHANGED | vacío | null
+com.maxmpz.audioplayer.STATUS_CHANGED | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.maxmpz.audioplayer.STATUS_CHANGED | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=com.maxmpz.audioplayer, bluetooth=false)
+com.maxmpz.audioplayer.STATUS_CHANGED | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=com.maxmpz.audioplayer, bluetooth=false)
+com.maxmpz.audioplayer.STATUS_CHANGED | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=com.maxmpz.audioplayer, bluetooth=false)
+com.maxmpz.audioplayer.STATUS_CHANGED | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=com.maxmpz.audioplayer, bluetooth=false)
+com.maxmpz.audioplayer.STATUS_CHANGED | autochips-media | null
+com.maxmpz.audioplayer.STATUS_CHANGED | autochips-estado | null
+com.maxmpz.audioplayer.STATUS_CHANGED | autochips-pausa | null
+com.maxmpz.audioplayer.STATUS_CHANGED | clw-bt | null
+com.maxmpz.audioplayer.STATUS_CHANGED | clw-usb | null
+com.maxmpz.audioplayer.STATUS_CHANGED | track-event | null
+com.maxmpz.audioplayer.STATUS_CHANGED | track-event-pausa | null
+com.htc.music.metachanged | vacío | null
+com.htc.music.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.htc.music.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.htc.music.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.htc.music.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.htc.music.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.htc.music.metachanged | autochips-media | null
+com.htc.music.metachanged | autochips-estado | null
+com.htc.music.metachanged | autochips-pausa | null
+com.htc.music.metachanged | clw-bt | null
+com.htc.music.metachanged | clw-usb | null
+com.htc.music.metachanged | track-event | null
+com.htc.music.metachanged | track-event-pausa | null
+com.htc.music.playstatechanged | vacío | null
+com.htc.music.playstatechanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.htc.music.playstatechanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.htc.music.playstatechanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.htc.music.playstatechanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.htc.music.playstatechanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.htc.music.playstatechanged | autochips-media | null
+com.htc.music.playstatechanged | autochips-estado | null
+com.htc.music.playstatechanged | autochips-pausa | null
+com.htc.music.playstatechanged | clw-bt | null
+com.htc.music.playstatechanged | clw-usb | null
+com.htc.music.playstatechanged | track-event | null
+com.htc.music.playstatechanged | track-event-pausa | null
+com.sec.android.app.music.metachanged | vacío | null
+com.sec.android.app.music.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.sec.android.app.music.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.sec.android.app.music.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.sec.android.app.music.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.sec.android.app.music.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.sec.android.app.music.metachanged | autochips-media | null
+com.sec.android.app.music.metachanged | autochips-estado | null
+com.sec.android.app.music.metachanged | autochips-pausa | null
+com.sec.android.app.music.metachanged | clw-bt | null
+com.sec.android.app.music.metachanged | clw-usb | null
+com.sec.android.app.music.metachanged | track-event | null
+com.sec.android.app.music.metachanged | track-event-pausa | null
+com.miui.player.metachanged | vacío | null
+com.miui.player.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.miui.player.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.miui.player.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.miui.player.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.miui.player.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.miui.player.metachanged | autochips-media | null
+com.miui.player.metachanged | autochips-estado | null
+com.miui.player.metachanged | autochips-pausa | null
+com.miui.player.metachanged | clw-bt | null
+com.miui.player.metachanged | clw-usb | null
+com.miui.player.metachanged | track-event | null
+com.miui.player.metachanged | track-event-pausa | null
+com.andrew.apollo.metachanged | vacío | null
+com.andrew.apollo.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.andrew.apollo.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.andrew.apollo.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.andrew.apollo.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.andrew.apollo.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.andrew.apollo.metachanged | autochips-media | null
+com.andrew.apollo.metachanged | autochips-estado | null
+com.andrew.apollo.metachanged | autochips-pausa | null
+com.andrew.apollo.metachanged | clw-bt | null
+com.andrew.apollo.metachanged | clw-usb | null
+com.andrew.apollo.metachanged | track-event | null
+com.andrew.apollo.metachanged | track-event-pausa | null
+com.andrew.apollo.playstatechanged | vacío | null
+com.andrew.apollo.playstatechanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.andrew.apollo.playstatechanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.andrew.apollo.playstatechanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.andrew.apollo.playstatechanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.andrew.apollo.playstatechanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.andrew.apollo.playstatechanged | autochips-media | null
+com.andrew.apollo.playstatechanged | autochips-estado | null
+com.andrew.apollo.playstatechanged | autochips-pausa | null
+com.andrew.apollo.playstatechanged | clw-bt | null
+com.andrew.apollo.playstatechanged | clw-usb | null
+com.andrew.apollo.playstatechanged | track-event | null
+com.andrew.apollo.playstatechanged | track-event-pausa | null
+com.jrtstudio.AnotherMusicPlayer.metachanged | vacío | null
+com.jrtstudio.AnotherMusicPlayer.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.jrtstudio.AnotherMusicPlayer.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.jrtstudio.AnotherMusicPlayer.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.jrtstudio.AnotherMusicPlayer.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.jrtstudio.AnotherMusicPlayer.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.jrtstudio.AnotherMusicPlayer.metachanged | autochips-media | null
+com.jrtstudio.AnotherMusicPlayer.metachanged | autochips-estado | null
+com.jrtstudio.AnotherMusicPlayer.metachanged | autochips-pausa | null
+com.jrtstudio.AnotherMusicPlayer.metachanged | clw-bt | null
+com.jrtstudio.AnotherMusicPlayer.metachanged | clw-usb | null
+com.jrtstudio.AnotherMusicPlayer.metachanged | track-event | null
+com.jrtstudio.AnotherMusicPlayer.metachanged | track-event-pausa | null
+com.jrtstudio.music.metachanged | vacío | null
+com.jrtstudio.music.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.jrtstudio.music.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.jrtstudio.music.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.jrtstudio.music.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.jrtstudio.music.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.jrtstudio.music.metachanged | autochips-media | null
+com.jrtstudio.music.metachanged | autochips-estado | null
+com.jrtstudio.music.metachanged | autochips-pausa | null
+com.jrtstudio.music.metachanged | clw-bt | null
+com.jrtstudio.music.metachanged | clw-usb | null
+com.jrtstudio.music.metachanged | track-event | null
+com.jrtstudio.music.metachanged | track-event-pausa | null
+com.doubleTwist.androidPlayer.metachanged | vacío | null
+com.doubleTwist.androidPlayer.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.doubleTwist.androidPlayer.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.doubleTwist.androidPlayer.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.doubleTwist.androidPlayer.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.doubleTwist.androidPlayer.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.doubleTwist.androidPlayer.metachanged | autochips-media | null
+com.doubleTwist.androidPlayer.metachanged | autochips-estado | null
+com.doubleTwist.androidPlayer.metachanged | autochips-pausa | null
+com.doubleTwist.androidPlayer.metachanged | clw-bt | null
+com.doubleTwist.androidPlayer.metachanged | clw-usb | null
+com.doubleTwist.androidPlayer.metachanged | track-event | null
+com.doubleTwist.androidPlayer.metachanged | track-event-pausa | null
+com.real.IMP.metachanged | vacío | null
+com.real.IMP.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.real.IMP.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.real.IMP.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.real.IMP.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.real.IMP.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.real.IMP.metachanged | autochips-media | null
+com.real.IMP.metachanged | autochips-estado | null
+com.real.IMP.metachanged | autochips-pausa | null
+com.real.IMP.metachanged | clw-bt | null
+com.real.IMP.metachanged | clw-usb | null
+com.real.IMP.metachanged | track-event | null
+com.real.IMP.metachanged | track-event-pausa | null
+com.amazon.mp3.metachanged | vacío | null
+com.amazon.mp3.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.amazon.mp3.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.amazon.mp3.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.amazon.mp3.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.amazon.mp3.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.amazon.mp3.metachanged | autochips-media | null
+com.amazon.mp3.metachanged | autochips-estado | null
+com.amazon.mp3.metachanged | autochips-pausa | null
+com.amazon.mp3.metachanged | clw-bt | null
+com.amazon.mp3.metachanged | clw-usb | null
+com.amazon.mp3.metachanged | track-event | null
+com.amazon.mp3.metachanged | track-event-pausa | null
+fm.last.android.metachanged | vacío | null
+fm.last.android.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+fm.last.android.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+fm.last.android.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+fm.last.android.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+fm.last.android.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+fm.last.android.metachanged | autochips-media | null
+fm.last.android.metachanged | autochips-estado | null
+fm.last.android.metachanged | autochips-pausa | null
+fm.last.android.metachanged | clw-bt | null
+fm.last.android.metachanged | clw-usb | null
+fm.last.android.metachanged | track-event | null
+fm.last.android.metachanged | track-event-pausa | null
+deezer.android.app.metachanged | vacío | null
+deezer.android.app.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+deezer.android.app.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+deezer.android.app.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+deezer.android.app.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+deezer.android.app.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+deezer.android.app.metachanged | autochips-media | null
+deezer.android.app.metachanged | autochips-estado | null
+deezer.android.app.metachanged | autochips-pausa | null
+deezer.android.app.metachanged | clw-bt | null
+deezer.android.app.metachanged | clw-usb | null
+deezer.android.app.metachanged | track-event | null
+deezer.android.app.metachanged | track-event-pausa | null
+com.lge.music.metachanged | vacío | null
+com.lge.music.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.lge.music.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.lge.music.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.lge.music.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.lge.music.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.lge.music.metachanged | autochips-media | null
+com.lge.music.metachanged | autochips-estado | null
+com.lge.music.metachanged | autochips-pausa | null
+com.lge.music.metachanged | clw-bt | null
+com.lge.music.metachanged | clw-usb | null
+com.lge.music.metachanged | track-event | null
+com.lge.music.metachanged | track-event-pausa | null
+com.sonyericsson.music.metachanged | vacío | null
+com.sonyericsson.music.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.sonyericsson.music.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.sonyericsson.music.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.sonyericsson.music.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.sonyericsson.music.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.sonyericsson.music.metachanged | autochips-media | null
+com.sonyericsson.music.metachanged | autochips-estado | null
+com.sonyericsson.music.metachanged | autochips-pausa | null
+com.sonyericsson.music.metachanged | clw-bt | null
+com.sonyericsson.music.metachanged | clw-usb | null
+com.sonyericsson.music.metachanged | track-event | null
+com.sonyericsson.music.metachanged | track-event-pausa | null
+com.rdio.android.metachanged | vacío | null
+com.rdio.android.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.rdio.android.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.rdio.android.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.rdio.android.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.rdio.android.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.rdio.android.metachanged | autochips-media | null
+com.rdio.android.metachanged | autochips-estado | null
+com.rdio.android.metachanged | autochips-pausa | null
+com.rdio.android.metachanged | clw-bt | null
+com.rdio.android.metachanged | clw-usb | null
+com.rdio.android.metachanged | track-event | null
+com.rdio.android.metachanged | track-event-pausa | null
+com.samsung.sec.android.MusicPlayer.metachanged | vacío | null
+com.samsung.sec.android.MusicPlayer.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.samsung.sec.android.MusicPlayer.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.samsung.sec.android.MusicPlayer.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.samsung.sec.android.MusicPlayer.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.samsung.sec.android.MusicPlayer.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.samsung.sec.android.MusicPlayer.metachanged | autochips-media | null
+com.samsung.sec.android.MusicPlayer.metachanged | autochips-estado | null
+com.samsung.sec.android.MusicPlayer.metachanged | autochips-pausa | null
+com.samsung.sec.android.MusicPlayer.metachanged | clw-bt | null
+com.samsung.sec.android.MusicPlayer.metachanged | clw-usb | null
+com.samsung.sec.android.MusicPlayer.metachanged | track-event | null
+com.samsung.sec.android.MusicPlayer.metachanged | track-event-pausa | null
+com.nullsoft.winamp.metachanged | vacío | null
+com.nullsoft.winamp.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.nullsoft.winamp.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.nullsoft.winamp.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.nullsoft.winamp.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.nullsoft.winamp.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.nullsoft.winamp.metachanged | autochips-media | null
+com.nullsoft.winamp.metachanged | autochips-estado | null
+com.nullsoft.winamp.metachanged | autochips-pausa | null
+com.nullsoft.winamp.metachanged | clw-bt | null
+com.nullsoft.winamp.metachanged | clw-usb | null
+com.nullsoft.winamp.metachanged | track-event | null
+com.nullsoft.winamp.metachanged | track-event-pausa | null
+org.videolan.vlc.metachanged | vacío | null
+org.videolan.vlc.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+org.videolan.vlc.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+org.videolan.vlc.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+org.videolan.vlc.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+org.videolan.vlc.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+org.videolan.vlc.metachanged | autochips-media | null
+org.videolan.vlc.metachanged | autochips-estado | null
+org.videolan.vlc.metachanged | autochips-pausa | null
+org.videolan.vlc.metachanged | clw-bt | null
+org.videolan.vlc.metachanged | clw-usb | null
+org.videolan.vlc.metachanged | track-event | null
+org.videolan.vlc.metachanged | track-event-pausa | null
+android.bluetooth.avrcp-controller.profile.action.TRACK_EVENT | vacío | null
+android.bluetooth.avrcp-controller.profile.action.TRACK_EVENT | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=true)
+android.bluetooth.avrcp-controller.profile.action.TRACK_EVENT | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=true)
+android.bluetooth.avrcp-controller.profile.action.TRACK_EVENT | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+android.bluetooth.avrcp-controller.profile.action.TRACK_EVENT | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=true)
+android.bluetooth.avrcp-controller.profile.action.TRACK_EVENT | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+android.bluetooth.avrcp-controller.profile.action.TRACK_EVENT | autochips-media | null
+android.bluetooth.avrcp-controller.profile.action.TRACK_EVENT | autochips-estado | null
+android.bluetooth.avrcp-controller.profile.action.TRACK_EVENT | autochips-pausa | null
+android.bluetooth.avrcp-controller.profile.action.TRACK_EVENT | clw-bt | null
+android.bluetooth.avrcp-controller.profile.action.TRACK_EVENT | clw-usb | null
+android.bluetooth.avrcp-controller.profile.action.TRACK_EVENT | track-event | BroadcastMeta(title=TE, artist=TEA, playing=true, pkg=null, bluetooth=true)
+android.bluetooth.avrcp-controller.profile.action.TRACK_EVENT | track-event-pausa | BroadcastMeta(title=null, artist=null, playing=false, pkg=null, bluetooth=true)
+com.android.bluetooth.a2dpsink.action.METADATA_CHANGED | vacío | null
+com.android.bluetooth.a2dpsink.action.METADATA_CHANGED | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=true)
+com.android.bluetooth.a2dpsink.action.METADATA_CHANGED | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=true)
+com.android.bluetooth.a2dpsink.action.METADATA_CHANGED | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.android.bluetooth.a2dpsink.action.METADATA_CHANGED | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=true)
+com.android.bluetooth.a2dpsink.action.METADATA_CHANGED | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.android.bluetooth.a2dpsink.action.METADATA_CHANGED | autochips-media | null
+com.android.bluetooth.a2dpsink.action.METADATA_CHANGED | autochips-estado | null
+com.android.bluetooth.a2dpsink.action.METADATA_CHANGED | autochips-pausa | null
+com.android.bluetooth.a2dpsink.action.METADATA_CHANGED | clw-bt | null
+com.android.bluetooth.a2dpsink.action.METADATA_CHANGED | clw-usb | null
+com.android.bluetooth.a2dpsink.action.METADATA_CHANGED | track-event | null
+com.android.bluetooth.a2dpsink.action.METADATA_CHANGED | track-event-pausa | null
+com.android.music.bluetooth.metachanged | vacío | null
+com.android.music.bluetooth.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=true)
+com.android.music.bluetooth.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=true)
+com.android.music.bluetooth.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.android.music.bluetooth.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=true)
+com.android.music.bluetooth.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.android.music.bluetooth.metachanged | autochips-media | null
+com.android.music.bluetooth.metachanged | autochips-estado | null
+com.android.music.bluetooth.metachanged | autochips-pausa | null
+com.android.music.bluetooth.metachanged | clw-bt | null
+com.android.music.bluetooth.metachanged | clw-usb | null
+com.android.music.bluetooth.metachanged | track-event | null
+com.android.music.bluetooth.metachanged | track-event-pausa | null
+com.microntek.music.report | vacío | null
+com.microntek.music.report | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.microntek.music.report | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.microntek.music.report | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.microntek.music.report | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.microntek.music.report | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.microntek.music.report | autochips-media | null
+com.microntek.music.report | autochips-estado | null
+com.microntek.music.report | autochips-pausa | null
+com.microntek.music.report | clw-bt | null
+com.microntek.music.report | clw-usb | null
+com.microntek.music.report | track-event | null
+com.microntek.music.report | track-event-pausa | null
+com.microntek.bt.report | vacío | null
+com.microntek.bt.report | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=true)
+com.microntek.bt.report | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=true)
+com.microntek.bt.report | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.microntek.bt.report | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=true)
+com.microntek.bt.report | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.microntek.bt.report | autochips-media | null
+com.microntek.bt.report | autochips-estado | null
+com.microntek.bt.report | autochips-pausa | null
+com.microntek.bt.report | clw-bt | null
+com.microntek.bt.report | clw-usb | null
+com.microntek.bt.report | track-event | null
+com.microntek.bt.report | track-event-pausa | null
+com.syu.bt.music.id3 | vacío | null
+com.syu.bt.music.id3 | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=true)
+com.syu.bt.music.id3 | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=true)
+com.syu.bt.music.id3 | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.syu.bt.music.id3 | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=true)
+com.syu.bt.music.id3 | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.syu.bt.music.id3 | autochips-media | null
+com.syu.bt.music.id3 | autochips-estado | null
+com.syu.bt.music.id3 | autochips-pausa | null
+com.syu.bt.music.id3 | clw-bt | null
+com.syu.bt.music.id3 | clw-usb | null
+com.syu.bt.music.id3 | track-event | null
+com.syu.bt.music.id3 | track-event-pausa | null
+com.syu.ms.bt.id3 | vacío | null
+com.syu.ms.bt.id3 | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=true)
+com.syu.ms.bt.id3 | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=true)
+com.syu.ms.bt.id3 | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.syu.ms.bt.id3 | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=true)
+com.syu.ms.bt.id3 | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.syu.ms.bt.id3 | autochips-media | null
+com.syu.ms.bt.id3 | autochips-estado | null
+com.syu.ms.bt.id3 | autochips-pausa | null
+com.syu.ms.bt.id3 | clw-bt | null
+com.syu.ms.bt.id3 | clw-usb | null
+com.syu.ms.bt.id3 | track-event | null
+com.syu.ms.bt.id3 | track-event-pausa | null
+com.goodocom.gocsdk.music.info | vacío | null
+com.goodocom.gocsdk.music.info | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=true)
+com.goodocom.gocsdk.music.info | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=true)
+com.goodocom.gocsdk.music.info | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.goodocom.gocsdk.music.info | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=true)
+com.goodocom.gocsdk.music.info | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.goodocom.gocsdk.music.info | autochips-media | null
+com.goodocom.gocsdk.music.info | autochips-estado | null
+com.goodocom.gocsdk.music.info | autochips-pausa | null
+com.goodocom.gocsdk.music.info | clw-bt | null
+com.goodocom.gocsdk.music.info | clw-usb | null
+com.goodocom.gocsdk.music.info | track-event | null
+com.goodocom.gocsdk.music.info | track-event-pausa | null
+com.goodocom.gocsdk.action.MUSIC_INFO | vacío | null
+com.goodocom.gocsdk.action.MUSIC_INFO | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=true)
+com.goodocom.gocsdk.action.MUSIC_INFO | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=true)
+com.goodocom.gocsdk.action.MUSIC_INFO | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.goodocom.gocsdk.action.MUSIC_INFO | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=true)
+com.goodocom.gocsdk.action.MUSIC_INFO | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.goodocom.gocsdk.action.MUSIC_INFO | autochips-media | null
+com.goodocom.gocsdk.action.MUSIC_INFO | autochips-estado | null
+com.goodocom.gocsdk.action.MUSIC_INFO | autochips-pausa | null
+com.goodocom.gocsdk.action.MUSIC_INFO | clw-bt | null
+com.goodocom.gocsdk.action.MUSIC_INFO | clw-usb | null
+com.goodocom.gocsdk.action.MUSIC_INFO | track-event | null
+com.goodocom.gocsdk.action.MUSIC_INFO | track-event-pausa | null
+com.ts.bt.music.info | vacío | null
+com.ts.bt.music.info | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=true)
+com.ts.bt.music.info | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=true)
+com.ts.bt.music.info | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.ts.bt.music.info | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=true)
+com.ts.bt.music.info | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.ts.bt.music.info | autochips-media | null
+com.ts.bt.music.info | autochips-estado | null
+com.ts.bt.music.info | autochips-pausa | null
+com.ts.bt.music.info | clw-bt | null
+com.ts.bt.music.info | clw-usb | null
+com.ts.bt.music.info | track-event | null
+com.ts.bt.music.info | track-event-pausa | null
+com.fyt.bt.music.id3 | vacío | null
+com.fyt.bt.music.id3 | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=true)
+com.fyt.bt.music.id3 | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=true)
+com.fyt.bt.music.id3 | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.fyt.bt.music.id3 | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=true)
+com.fyt.bt.music.id3 | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.fyt.bt.music.id3 | autochips-media | null
+com.fyt.bt.music.id3 | autochips-estado | null
+com.fyt.bt.music.id3 | autochips-pausa | null
+com.fyt.bt.music.id3 | clw-bt | null
+com.fyt.bt.music.id3 | clw-usb | null
+com.fyt.bt.music.id3 | track-event | null
+com.fyt.bt.music.id3 | track-event-pausa | null
+com.autochips.bluetooth.MUSIC_INFO | vacío | null
+com.autochips.bluetooth.MUSIC_INFO | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=true)
+com.autochips.bluetooth.MUSIC_INFO | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=true)
+com.autochips.bluetooth.MUSIC_INFO | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.autochips.bluetooth.MUSIC_INFO | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=true)
+com.autochips.bluetooth.MUSIC_INFO | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.autochips.bluetooth.MUSIC_INFO | autochips-media | null
+com.autochips.bluetooth.MUSIC_INFO | autochips-estado | null
+com.autochips.bluetooth.MUSIC_INFO | autochips-pausa | null
+com.autochips.bluetooth.MUSIC_INFO | clw-bt | null
+com.autochips.bluetooth.MUSIC_INFO | clw-usb | null
+com.autochips.bluetooth.MUSIC_INFO | track-event | null
+com.autochips.bluetooth.MUSIC_INFO | track-event-pausa | null
+com.autochips.bt.music.id3 | vacío | null
+com.autochips.bt.music.id3 | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=true)
+com.autochips.bt.music.id3 | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=true)
+com.autochips.bt.music.id3 | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.autochips.bt.music.id3 | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=true)
+com.autochips.bt.music.id3 | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.autochips.bt.music.id3 | autochips-media | null
+com.autochips.bt.music.id3 | autochips-estado | null
+com.autochips.bt.music.id3 | autochips-pausa | null
+com.autochips.bt.music.id3 | clw-bt | null
+com.autochips.bt.music.id3 | clw-usb | null
+com.autochips.bt.music.id3 | track-event | null
+com.autochips.bt.music.id3 | track-event-pausa | null
+com.nwd.action.ACTION_BT_MUSIC_ID3 | vacío | null
+com.nwd.action.ACTION_BT_MUSIC_ID3 | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=true)
+com.nwd.action.ACTION_BT_MUSIC_ID3 | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=true)
+com.nwd.action.ACTION_BT_MUSIC_ID3 | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.nwd.action.ACTION_BT_MUSIC_ID3 | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=true)
+com.nwd.action.ACTION_BT_MUSIC_ID3 | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.nwd.action.ACTION_BT_MUSIC_ID3 | autochips-media | null
+com.nwd.action.ACTION_BT_MUSIC_ID3 | autochips-estado | null
+com.nwd.action.ACTION_BT_MUSIC_ID3 | autochips-pausa | null
+com.nwd.action.ACTION_BT_MUSIC_ID3 | clw-bt | null
+com.nwd.action.ACTION_BT_MUSIC_ID3 | clw-usb | null
+com.nwd.action.ACTION_BT_MUSIC_ID3 | track-event | null
+com.nwd.action.ACTION_BT_MUSIC_ID3 | track-event-pausa | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_MEDIA_DATA_UPDATE | vacío | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_MEDIA_DATA_UPDATE | genérico | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_MEDIA_DATA_UPDATE | genérico-2 | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_MEDIA_DATA_UPDATE | sin-dato | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_MEDIA_DATA_UPDATE | id3 | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_MEDIA_DATA_UPDATE | solo-pausa | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_MEDIA_DATA_UPDATE | autochips-media | BroadcastMeta(title=Ojitos, artist=BB, playing=null, pkg=null, bluetooth=true)
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_MEDIA_DATA_UPDATE | autochips-estado | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_MEDIA_DATA_UPDATE | autochips-pausa | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_MEDIA_DATA_UPDATE | clw-bt | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_MEDIA_DATA_UPDATE | clw-usb | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_MEDIA_DATA_UPDATE | track-event | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_MEDIA_DATA_UPDATE | track-event-pausa | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_PLAYBACK_DATA_UPDATE | vacío | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_PLAYBACK_DATA_UPDATE | genérico | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_PLAYBACK_DATA_UPDATE | genérico-2 | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_PLAYBACK_DATA_UPDATE | sin-dato | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_PLAYBACK_DATA_UPDATE | id3 | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_PLAYBACK_DATA_UPDATE | solo-pausa | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_PLAYBACK_DATA_UPDATE | autochips-media | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_PLAYBACK_DATA_UPDATE | autochips-estado | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_PLAYBACK_DATA_UPDATE | autochips-pausa | BroadcastMeta(title=null, artist=null, playing=false, pkg=null, bluetooth=true)
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_PLAYBACK_DATA_UPDATE | clw-bt | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_PLAYBACK_DATA_UPDATE | clw-usb | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_PLAYBACK_DATA_UPDATE | track-event | null
+com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility.action.ACTION_PLAYBACK_DATA_UPDATE | track-event-pausa | null
+com.clw.intent.MEDIA_INFO | vacío | null
+com.clw.intent.MEDIA_INFO | genérico | null
+com.clw.intent.MEDIA_INFO | genérico-2 | null
+com.clw.intent.MEDIA_INFO | sin-dato | null
+com.clw.intent.MEDIA_INFO | id3 | null
+com.clw.intent.MEDIA_INFO | solo-pausa | null
+com.clw.intent.MEDIA_INFO | autochips-media | null
+com.clw.intent.MEDIA_INFO | autochips-estado | null
+com.clw.intent.MEDIA_INFO | autochips-pausa | null
+com.clw.intent.MEDIA_INFO | clw-bt | BroadcastMeta(title=Clw, artist=ClwA, playing=null, pkg=null, bluetooth=true)
+com.clw.intent.MEDIA_INFO | clw-usb | BroadcastMeta(title=Clw, artist=null, playing=null, pkg=null, bluetooth=false)
+com.clw.intent.MEDIA_INFO | track-event | null
+com.clw.intent.MEDIA_INFO | track-event-pausa | null
+com.clw.intent.MEDIA_PLAY_STATE | vacío | null
+com.clw.intent.MEDIA_PLAY_STATE | genérico | null
+com.clw.intent.MEDIA_PLAY_STATE | genérico-2 | null
+com.clw.intent.MEDIA_PLAY_STATE | sin-dato | null
+com.clw.intent.MEDIA_PLAY_STATE | id3 | null
+com.clw.intent.MEDIA_PLAY_STATE | solo-pausa | null
+com.clw.intent.MEDIA_PLAY_STATE | autochips-media | null
+com.clw.intent.MEDIA_PLAY_STATE | autochips-estado | null
+com.clw.intent.MEDIA_PLAY_STATE | autochips-pausa | null
+com.clw.intent.MEDIA_PLAY_STATE | clw-bt | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=true)
+com.clw.intent.MEDIA_PLAY_STATE | clw-usb | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.clw.intent.MEDIA_PLAY_STATE | track-event | null
+com.clw.intent.MEDIA_PLAY_STATE | track-event-pausa | null
+com.x.unknown.metachanged | vacío | null
+com.x.unknown.metachanged | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.x.unknown.metachanged | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=null, bluetooth=false)
+com.x.unknown.metachanged | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.x.unknown.metachanged | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=null, bluetooth=false)
+com.x.unknown.metachanged | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=null, bluetooth=false)
+com.x.unknown.metachanged | autochips-media | null
+com.x.unknown.metachanged | autochips-estado | null
+com.x.unknown.metachanged | autochips-pausa | null
+com.x.unknown.metachanged | clw-bt | null
+com.x.unknown.metachanged | clw-usb | null
+com.x.unknown.metachanged | track-event | null
+com.x.unknown.metachanged | track-event-pausa | null
+com.maxmpz.audioplayer.OTHER | vacío | null
+com.maxmpz.audioplayer.OTHER | genérico | BroadcastMeta(title=Canción, artist=Artista, playing=true, pkg=com.x.player, bluetooth=false)
+com.maxmpz.audioplayer.OTHER | genérico-2 | BroadcastMeta(title=T2, artist=S2, playing=false, pkg=com.maxmpz.audioplayer, bluetooth=false)
+com.maxmpz.audioplayer.OTHER | sin-dato | BroadcastMeta(title=null, artist=null, playing=true, pkg=com.maxmpz.audioplayer, bluetooth=false)
+com.maxmpz.audioplayer.OTHER | id3 | BroadcastMeta(title=Id3, artist=Id3A, playing=true, pkg=com.maxmpz.audioplayer, bluetooth=false)
+com.maxmpz.audioplayer.OTHER | solo-pausa | BroadcastMeta(title=null, artist=null, playing=true, pkg=com.maxmpz.audioplayer, bluetooth=false)
+com.maxmpz.audioplayer.OTHER | autochips-media | null
+com.maxmpz.audioplayer.OTHER | autochips-estado | null
+com.maxmpz.audioplayer.OTHER | autochips-pausa | null
+com.maxmpz.audioplayer.OTHER | clw-bt | null
+com.maxmpz.audioplayer.OTHER | clw-usb | null
+com.maxmpz.audioplayer.OTHER | track-event | null
+com.maxmpz.audioplayer.OTHER | track-event-pausa | null

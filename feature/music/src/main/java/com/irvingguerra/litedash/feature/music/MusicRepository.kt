@@ -261,7 +261,7 @@ class MusicRepository(internal val context: Context) {
     val bluetoothBuiltIn: Boolean get() = bluetoothService != null
 
     /** La app que toca el Bluetooth: el propio Android (AVRCP) si lo trae, si no la enlazada. */
-    fun bluetoothApp(): String? = bluetoothService?.packageName ?: sourceApps[SourceKind.BLUETOOTH] ?: knownBluetooth
+    fun bluetoothApp(): String? = bluetoothAppOf(bluetoothService?.packageName, sourceApps[SourceKind.BLUETOOTH], knownBluetooth)
 
     /** La app de Bluetooth de marca instalada (chip propio), si hay. */
     internal val knownBluetooth: String? by lazy { HeadUnit.bluetoothMusicApp(context) }
