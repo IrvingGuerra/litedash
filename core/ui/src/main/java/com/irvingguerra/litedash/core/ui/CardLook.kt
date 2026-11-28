@@ -511,8 +511,8 @@ internal fun refracted(b: CardBackdrop, at: Offset, root: Size, size: Size, radi
     val halfH = size.height / 2
     val r = radius.coerceAtMost(minOf(halfW, halfH))
     val reach = depth.coerceAtMost(minOf(halfW, halfH))
-    // En una tarjeta chica el canto no cabe entero: se empuja en proporción (si no, cruza al otro lado y repite «gotas»).
-    val shove = push * (reach / depth.coerceAtLeast(1f))
+    // Nunca más que [LENS_BEND] del canto: así la imagen se aprieta sin voltearse (ver [LENS_PROFILE]).
+    val shove = minOf(push, reach * LENS_BEND)
     val shade = inner.coerceAtLeast(1f)
     for (y in 0 until h) {
         val py = (y + 0.5f) / scale
@@ -560,12 +560,16 @@ internal fun refracted(b: CardBackdrop, at: Offset, root: Size, size: Size, radi
     return Bitmap.createBitmap(out, w, h, Bitmap.Config.ARGB_8888).asImageBitmap()
 }
 
-/** La compresión del canto: 1 en la orilla, ¼ a un cuarto de la franja y 0 donde termina (64 valores). */
+/**
+ * La compresión del canto: 1 en la orilla y 0, sin escalón, donde termina (64 valores). Con el empuje acotado a
+ * [LENS_BEND] del canto, lo de atrás se aprieta hacia la orilla (hasta ~6 veces) pero nunca se voltea: el perfil de
+ * antes, más empinado, lo doblaba en espejo y donde daba la vuelta un fondo con mucho detalle dejaba «gotas».
+ */
 private val LENS_PROFILE = FloatArray(64) { i ->
     val t = i / 63f
-    val floor = 1f / 25f
-    ((1f / ((1f + 4f * t) * (1f + 4f * t))) - floor) / (1f - floor)
+    (1f - t) * (1f - t)
 }
+private const val LENS_BEND = 0.42f
 
 /** [a] con [amount] (0–1) de [b], canal por canal. */
 private fun mix(a: Int, b: Int, amount: Float): Int {

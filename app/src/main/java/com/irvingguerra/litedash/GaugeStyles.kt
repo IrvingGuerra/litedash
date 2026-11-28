@@ -61,6 +61,9 @@ import kotlin.math.sin
 /** Del arco del medidor: empieza abajo a la izquierda y da 240° (como un tablero real). */
 private const val START_ANGLE = 150f
 private const val SWEEP = 240f
+/** El alto del arco en radios (de arriba a sus puntas, que bajan medio radio del centro) y el ancho que le toca por alto. */
+private const val ARC_HEIGHT = 1.5f
+private const val FILL_ASPECT = 2f / ARC_HEIGHT
 
 /** Grados libres antes del arco de neón, para que su punta redonda no tome el color del final. */
 private const val NEON_PAD = 30f
@@ -416,23 +419,31 @@ fun GaugeCard(
             }
             // Digital y Barra se acomodan en lo que queda arriba de lo del frente.
             val above = maxHeight - frontSpace
+            // Esfera y Degradado sin nada al frente llenan la pieza (el arco mide vez y media su radio de alto).
+            val side = minOf(maxWidth, maxHeight * if (parts.fills) FILL_ASPECT else 1.15f)
             if (compact) CompactGauge(number, unit, tag, title, arc, parts, maxWidth, maxHeight)
             else when (look.style) {
                 GaugeStyle.NEEDLE -> NeedleGauge(number, unit, tag, parts, side = minOf(maxWidth, maxHeight * 1.15f))
                 GaugeStyle.DIGITAL -> DigitalGauge(number, unit, tag, parts, maxWidth, above)
                 GaugeStyle.BAR -> BarGauge(number, unit, tag, parts, maxWidth, above)
-                GaugeStyle.GRADIENT -> GradientGauge(number, unit, tag, parts, side = minOf(maxWidth, maxHeight * 1.15f))
-                GaugeStyle.DIAL -> DialGauge(number, unit, tag, parts, side = minOf(maxWidth, maxHeight * 1.15f))
+                GaugeStyle.GRADIENT -> GradientGauge(number, unit, tag, parts, side)
+                GaugeStyle.DIAL -> DialGauge(number, unit, tag, parts, side)
             }
             if (front != null && frontSpace > 0.dp) front(Modifier.align(Alignment.BottomCenter).width(frontWidth).height(frontSpace))
         }
     }
 }
 
-/** El círculo del arco (de la aguja también): centrado un poco abajo, del tamaño que quepa. */
-private class Dial(size: Size, stroke: Float, margin: Float = 0f) {
-    val radius = minOf(size.width, size.height * 1.15f) / 2 - stroke - margin
-    val center = Offset(size.width / 2, size.height / 2 + radius * 0.12f)
+/**
+ * El círculo del arco (de la aguja también): centrado un poco abajo, del tamaño que quepa. Con [fill] ocupa todo el
+ * alto (el arco, de 240°, mide vez y media su radio de alto: sin esto sobraba hueco abajo), menos [below] que se
+ * guarda al pie (los números bajo las puntas).
+ */
+private class Dial(size: Size, stroke: Float, margin: Float = 0f, fill: Boolean = false, below: Float = 0f) {
+    private val room = size.height - below
+    private val whole = if (fill) minOf(size.width / 2, room / ARC_HEIGHT) else minOf(size.width, size.height * 1.15f) / 2
+    val radius = whole - stroke - margin
+    val center = Offset(size.width / 2, if (fill) room / 2 + whole * (1f - ARC_HEIGHT / 2) else size.height / 2 + radius * 0.12f)
     val topLeft = Offset(center.x - radius, center.y - radius)
     val box = Size(radius * 2, radius * 2)
 
@@ -627,7 +638,10 @@ private fun GaugeParts.centerNumberSize(side: Dp): Float {
  * Cuánto baja la lectura al centro del arco; con algo al frente sube un quinto de su alto (más arriba
  * chocaba con los números de la escala).
  */
-private fun GaugeParts.centerOffset(side: Dp): Dp = side * 0.04f - frontSpace * 0.2f
+private fun GaugeParts.centerOffset(side: Dp): Dp = if (fills) side * 0.105f else side * 0.04f - frontSpace * 0.2f
+
+/** Sin nada al frente, Esfera y Degradado llenan la pieza ([Dial] con `fill`). */
+private val GaugeParts.fills get() = frontSpace == 0.dp && look.style != GaugeStyle.NEEDLE
 
 /** El número y su unidad al centro del arco, para los estilos sin aguja. */
 @Composable
@@ -645,7 +659,7 @@ private fun GradientGauge(number: String, unit: String, tag: String, p: GaugePar
     Spacer(Modifier.fillMaxSize().drawWithCache {
         val shades = c.shades(p)
         val band = (size.minDimension * 0.14f).coerceIn(10.dp.toPx(), 64.dp.toPx())
-        val d = Dial(size, band * 0.25f, if (p.look.numbers) endStyle.fontSize.toPx() * 1.4f else 0f)
+        val d = Dial(size, band * 0.25f, if (p.look.numbers) endStyle.fontSize.toPx() * 1.4f else 0f, p.fills, if (p.look.numbers) endStyle.fontSize.toPx() else 0f)
         val count = 44
         val outer = d.radius
         val inner = outer - band
@@ -705,8 +719,10 @@ private fun DialGauge(number: String, unit: String, tag: String, p: GaugeParts, 
         // En chico, delgado; de ~200 dp para arriba engorda hasta 2.4 veces a los ~500 dp (pantalla completa):
         // un aro de 12 dp en una esfera enorme se veía como un hilo (Irving, 2026-11-09).
         val grow = 1f + 1.4f * ((size.minDimension.toDp() - 200.dp) / 300.dp).coerceIn(0f, 1f)
-        val base = (size.minDimension * 0.025f * grow).coerceIn(2.dp.toPx(), 36.dp.toPx())
-        val neon = (size.minDimension * 0.035f * grow).coerceIn(3.dp.toPx(), 44.dp.toPx())
+        // En chico y mediano, nunca menos que [thick]: se veía como un hilo (Irving, 2026-11-28).
+        fun thick(part: Float, most: Dp) = minOf(size.minDimension * part, most.toPx())
+        val base = maxOf(size.minDimension * 0.025f * grow, thick(0.04f, 9.dp)).coerceIn(2.dp.toPx(), 36.dp.toPx())
+        val neon = maxOf(size.minDimension * 0.035f * grow, thick(0.055f, 13.dp)).coerceIn(3.dp.toPx(), 44.dp.toPx())
         // Los cuadros ya son anchos: crecen la mitad que el aro liso (si no, en grande se veían toscos).
         val cell = (size.minDimension * 0.06f * (1f + (grow - 1f) / 2)).coerceIn(5.dp.toPx(), 36.dp.toPx())
         // Lo que el brillo del neón sale de su aro: fijo (el de siempre en chico), no engorda con el aro; si
@@ -716,9 +732,10 @@ private fun DialGauge(number: String, unit: String, tag: String, p: GaugeParts, 
         val mark = (size.minDimension * 0.025f).coerceIn(2.dp.toPx(), 12.dp.toPx())
         // El círculo de cada aro (el neón deja espacio por fuera para su brillo) y dónde empiezan las marcas.
         val d = when (p.look.rim) {
-            GaugeRim.SMOOTH -> Dial(size, base)
-            GaugeRim.NEON -> Dial(size, neon / 2 + glow)
-            GaugeRim.BLOCKS -> Dial(size, cell * 0.6f)
+            // Sin aire de más: el aro llega a la orilla y lo tenue del brillo del neón cae en el margen de la pieza.
+            GaugeRim.SMOOTH -> Dial(size, base / 2, fill = p.fills)
+            GaugeRim.NEON -> Dial(size, neon / 2 + glow * 0.3f, fill = p.fills)
+            GaugeRim.BLOCKS -> Dial(size, cell * 0.6f, fill = p.fills)
         }
         val outer = d.radius - when (p.look.rim) {
             GaugeRim.SMOOTH -> base * 2.2f
