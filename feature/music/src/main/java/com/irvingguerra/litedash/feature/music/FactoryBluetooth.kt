@@ -9,12 +9,22 @@ package com.irvingguerra.litedash.feature.music
  * P1: solo mueve la lista de apps y las recetas aquí, sin cambiar nada. [all] aplanado da EXACTAMENTE la lista de antes,
  * en el mismo orden (lo fija `FactoryBluetoothTest`).
  */
-internal abstract class FactoryBluetoothKind(val id: String, val family: HeadUnit, vararg apps: BrandBluetooth) {
+internal abstract class FactoryBluetoothKind(
+    val id: String,
+    val family: HeadUnit,
+    vararg apps: BrandBluetooth,
+    /** Recetas propias, entre «sin hacer nada» y abrir la app de fábrica (que van en todas). */
+    own: List<String> = emptyList(),
+) {
     /** Sus apps, en el orden de prioridad de siempre. */
     val apps: List<BrandBluetooth> = apps.toList()
 
-    /** Sus recetas para que suene, de la primera a la última (hoy, las de su familia). */
-    open val recipes: List<String> get() = family.bluetoothRecipes
+    /**
+     * Sus recetas para que suene, de la primera a la última (la calibración las prueba en orden). Primero lo de la marca
+     * (inocuo si no hace falta y es lo que se hacía antes de calibrar: así «sin hacer nada» no queda guardado por
+     * casualidad cuando otra app ya había pedido la fuente), luego no hacer nada y al final abrir su app.
+     */
+    val recipes: List<String> = own + Recipes.PLAIN + Recipes.OPEN_FACTORY
 
     /**
      * Cuando el celular empieza a sonar por su Bluetooth, eso cuenta como el ▶ y se pide el sonido con la receta ya
@@ -55,6 +65,7 @@ internal object FytBluetooth : FactoryBluetoothKind(
     BrandBluetooth(HeadUnit.FYT_BLUETOOTH, HeadUnit.FYT),
     BrandBluetooth("com.syu.ms", HeadUnit.FYT, music = false),
     BrandBluetooth("com.fyt.bt", HeadUnit.FYT, music = false),
+    own = listOf(Recipes.FYT_TOGGLE),
 )
 
 internal object TopWayBluetooth : FactoryBluetoothKind(
@@ -62,6 +73,7 @@ internal object TopWayBluetooth : FactoryBluetoothKind(
     BrandBluetooth(HeadUnit.TOPWAY_BLUETOOTH, HeadUnit.TOPWAY),
     BrandBluetooth("com.tw.service", HeadUnit.TOPWAY, music = false),
     BrandBluetooth("com.ts.bt", HeadUnit.TOPWAY, music = false),
+    own = listOf(Recipes.TW_SOURCE8),
 )
 
 internal object MicrontekBluetooth : FactoryBluetoothKind("microntek", HeadUnit.MICRONTEK, BrandBluetooth("com.microntek.bt", HeadUnit.MICRONTEK))
