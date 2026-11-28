@@ -12,6 +12,10 @@
     <string name="cards_glass">Üveg</string>
     <string name="cards_opacity">Mennyire látszanak</string>
     <string name="cards_glass_help">A háttérképed elmosódva látszik minden kártya mögött; térképes háttér fölött a térkép tompítva látszik.</string>
+    <string name="glass_depth">Üveg vastagsága</string>
+    <string name="glass_depth_thin">Vékony</string>
+    <string name="glass_depth_medium">Közepes</string>
+    <string name="glass_depth_thick">Vastag</string>
     <string name="cards_themes">Kombinációk</string>
     <string name="language_search">Keresd meg a nyelved</string>
     <string name="language_not_found">Ez a nyelv még nincs meg. Segíts lefordítani a litedash.dev/translate oldalon.</string>

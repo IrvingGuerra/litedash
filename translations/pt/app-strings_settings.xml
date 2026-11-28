@@ -14,6 +14,10 @@
     <string name="cards_glass">Vidro</string>
     <string name="cards_opacity">Quanto aparecem</string>
     <string name="cards_glass_help">Seu plano de fundo aparece desfocado atrás de cada cartão; sobre o mapa de fundo, o mapa aparece atenuado.</string>
+    <string name="glass_depth">Espessura do vidro</string>
+    <string name="glass_depth_thin">Fino</string>
+    <string name="glass_depth_medium">Médio</string>
+    <string name="glass_depth_thick">Grosso</string>
     <string name="cards_themes">Combinações</string>
     <string name="language_search">Procure seu idioma</string>
     <string name="language_not_found">Esse idioma ainda não está disponível. Ajude a traduzir em litedash.dev/translate.</string>

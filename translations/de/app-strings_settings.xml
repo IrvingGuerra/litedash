@@ -12,6 +12,10 @@
     <string name="cards_glass">Glas</string>
     <string name="cards_opacity">Wie sichtbar</string>
     <string name="cards_glass_help">Dein Hintergrundbild erscheint unscharf hinter jeder Karte; über dem Karten-Hintergrund erscheint die Karte abgedämpft.</string>
+    <string name="glass_depth">Glasdicke</string>
+    <string name="glass_depth_thin">Dünn</string>
+    <string name="glass_depth_medium">Mittel</string>
+    <string name="glass_depth_thick">Dick</string>
     <string name="cards_themes">Kombinationen</string>
     <string name="language_search">Finde deine Sprache</string>
     <string name="language_not_found">Diese Sprache gibt es noch nicht. Hilf uns beim Übersetzen auf litedash.dev/translate.</string>

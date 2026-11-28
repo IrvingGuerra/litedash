@@ -38,6 +38,7 @@ import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.CardLook
 import com.irvingguerra.litedash.core.ui.CardStyle
 import com.irvingguerra.litedash.core.ui.DarkColors
+import com.irvingguerra.litedash.core.ui.GlassDepth
 import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
@@ -158,8 +159,8 @@ private val CARD_THEMES = listOf(
 )
 
 /**
- * Las tarjetas de toda la app: una muestra sobre tu fondo, lisas o de vidrio, cuánto se ven, combinaciones listas y
- * su color. Lo que se elige se ve al momento también aquí: Ajustes lleva la misma piel.
+ * Las tarjetas de toda la app: una muestra sobre tu fondo, lisas o de vidrio, cuánto se ven y qué tan grueso es el
+ * vidrio, combinaciones listas y su color. Lo que se elige se ve al momento también aquí: Ajustes lleva la misma piel.
  */
 @Composable
 private fun CardSettings(prefs: Preferences) {
@@ -167,7 +168,9 @@ private fun CardSettings(prefs: Preferences) {
     // La muestra es tu inicio de verdad: el pedazo de tu fondo que cae ahí (o el del tema) y una tarjeta con la misma
     // piel, que de vidrio lleva tu fondo desenfocado detrás, igual que los widgets.
     val backdrop = rememberWallpaperBackdrop(prefs.cardStyle == CardStyle.GLASS) { prefs.wallpaperDim }
-    val look = remember(prefs.cardStyle, prefs.cardOpacity, backdrop) { CardLook(prefs.cardStyle, prefs.cardOpacity, backdrop) }
+    val look = remember(prefs.cardStyle, prefs.cardOpacity, prefs.glassDepth, backdrop) {
+        CardLook(prefs.cardStyle, prefs.cardOpacity, backdrop, depth = prefs.glassDepth)
+    }
     Box(Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(Radius.card)).background(c.background)) {
         HomeWallpaper(prefs, asInWindow = true)
         CompositionLocalProvider(LocalCardLook provides look) {
@@ -188,6 +191,16 @@ private fun CardSettings(prefs: Preferences) {
         val fromSlider = { v: Float -> MIN_OPACITY + v * (1f - MIN_OPACITY) }
         LevelSlider(toSlider(prefs.cardOpacity), { prefs.previewCardOpacity(fromSlider(it)) }) { prefs.cardOpacity = fromSlider(it) }
         Label(stringResource(R.string.cards_glass_help), Typography.small, c.textMuted)
+        Label(stringResource(R.string.glass_depth), Typography.label, c.textMuted)
+        Segmented(
+            listOf(
+                GlassDepth.THIN to stringResource(R.string.glass_depth_thin),
+                GlassDepth.MEDIUM to stringResource(R.string.glass_depth_medium),
+                GlassDepth.THICK to stringResource(R.string.glass_depth_thick),
+            ),
+            prefs.glassDepth,
+            { prefs.glassDepth = it },
+        )
     }
     Label(stringResource(R.string.cards_themes), Typography.label, c.textMuted)
     val themeLabel = stringResource(R.string.factory_look)

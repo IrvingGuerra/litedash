@@ -12,6 +12,10 @@
     <string name="cards_glass">Kaca</string>
     <string name="cards_opacity">Seberapa terlihat</string>
     <string name="cards_glass_help">Wallpaper Anda tampak buram di balik setiap kartu; di atas latar peta, peta tampak diredupkan.</string>
+    <string name="glass_depth">Ketebalan kaca</string>
+    <string name="glass_depth_thin">Tipis</string>
+    <string name="glass_depth_medium">Sedang</string>
+    <string name="glass_depth_thick">Tebal</string>
     <string name="cards_themes">Kombinasi</string>
     <string name="language_search">Cari bahasa Anda</string>
     <string name="language_not_found">Bahasa itu belum ada. Bantu kami menerjemahkannya di litedash.dev/translate.</string>

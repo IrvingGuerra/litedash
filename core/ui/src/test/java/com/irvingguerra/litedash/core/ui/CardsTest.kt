@@ -201,4 +201,17 @@ class CardsTest {
         assertEquals(CardStyle.GLASS, CardStyle.fromStored("glass"))
         assertEquals(CardStyle.GLASS, CardStyle.fromStored("otra cosa"))
     }
+
+    @Test fun grosor_del_vidrio_guardado_y_de_fabrica_medio() {
+        for (d in GlassDepth.entries) assertEquals(d, GlassDepth.fromStored(d.stored))
+        assertEquals(GlassDepth.MEDIUM, GlassDepth.fromStored(null))
+        assertEquals(GlassDepth.MEDIUM, GlassDepth.fromStored("otra cosa"))
+        assertEquals(GlassDepth.MEDIUM, CardLook().depth)
+    }
+
+    @Test fun medio_es_lo_de_siempre_y_fino_menos_que_grueso() {
+        assertEquals(1f, GlassDepth.MEDIUM.scale)
+        assertTrue(GlassDepth.THIN.scale < 1f)
+        assertTrue(GlassDepth.THICK.scale > 1f)
+    }
 }

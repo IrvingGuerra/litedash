@@ -12,6 +12,10 @@
     <string name="cards_glass">Γυαλί</string>
     <string name="cards_opacity">Πόσο φαίνονται</string>
     <string name="cards_glass_help">Η ταπετσαρία σας φαίνεται θολή πίσω από κάθε κάρτα· πάνω σε χάρτη φόντου, ο χάρτης φαίνεται αχνός.</string>
+    <string name="glass_depth">Πάχος γυαλιού</string>
+    <string name="glass_depth_thin">Λεπτό</string>
+    <string name="glass_depth_medium">Μεσαίο</string>
+    <string name="glass_depth_thick">Χοντρό</string>
     <string name="cards_themes">Συνδυασμοί</string>
     <string name="language_search">Βρες τη γλώσσα σου</string>
     <string name="language_not_found">Αυτή η γλώσσα δεν υπάρχει ακόμα. Βοήθησέ μας να τη μεταφράσουμε στο litedash.dev/translate.</string>

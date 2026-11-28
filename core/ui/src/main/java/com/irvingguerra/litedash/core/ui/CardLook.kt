@@ -63,6 +63,16 @@ enum class CardStyle(val stored: String) {
     }
 }
 
+/** Qué tan grueso se ve el vidrio: el canto que dobla tu fondo, su sombra interior y el resplandor ([scale]). */
+enum class GlassDepth(val stored: String, val scale: Float) {
+    THIN("thin", 0.6f), MEDIUM("medium", 1f), THICK("thick", 1.45f);
+
+    companion object {
+        /** Sin elegir (o algo desconocido), el de fábrica. */
+        fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: MEDIUM
+    }
+}
+
 /**
  * El fondo de pantalla ya desenfocado (una sola vez, en chico) y el velo que lleva encima: el vidrio lo dibuja detrás
  * de cada tarjeta, recortado como el fondo (que llena la ventana sin deformarse), así parece que la tarjeta lo
@@ -79,7 +89,7 @@ class CardBackdrop(val image: ImageBitmap, internal val sharp: Pixels? = null, v
 
 /**
  * La piel de las tarjetas de toda la app (Inicio y apariencia → Interfaz → Tarjetas): su [style] y, de vidrio, cuánto
- * se ve de ellas ([opacity], 0–1). Su color viene del tema ([Colors.withCards]). El [backdrop] solo lo pone el inicio
+ * se ve de ellas ([opacity], 0–1) y qué tan grueso ([depth]). Su color viene del tema ([Colors.withCards]). El [backdrop] solo lo pone el inicio
  * (cada tarjeta recorta tu fondo desenfocado); lo demás va sobre un lienzo ya desenfocado y no lo necesita.
  */
 @Immutable
@@ -92,6 +102,7 @@ class CardLook(
      * lienzo. No sobre el mapa de fondo, que se mueve y no se desenfoca: ahí va ahumado ([smokeAlpha]).
      */
     val clear: Boolean = true,
+    val depth: GlassDepth = GlassDepth.MEDIUM,
 )
 
 // Dinámico: al arrastrar la opacidad solo se redibujan las tarjetas, no toda la app.
@@ -198,7 +209,7 @@ fun Modifier.skinSurface(look: CardLook, c: Colors, shape: Shape, floor: Float =
     var m = this
     val glass = look.style == CardStyle.GLASS
     if (!glass) return m.background(c.surface)
-    if (look.backdrop != null) m = m.blurredBackdrop(look.backdrop, shape, c.dark)
+    if (look.backdrop != null) m = m.blurredBackdrop(look.backdrop, shape, c.dark, look.depth)
     val fill = glassFill(look, floor)
     // Sobre el mapa de fondo, el mismo cristal pero ahumado con el color del fondo, que se vuelve el de la tarjeta
     // conforme se llena.
@@ -206,7 +217,7 @@ fun Modifier.skinSurface(look: CardLook, c: Colors, shape: Shape, floor: Float =
     val through = 1f - fill
     return m.background(Color.White.copy(alpha = frost(c.dark) * through))
         .background(tint)
-        .liquidGlass(c.dark, shape, through, lit = look.clear && look.backdrop != null)
+        .liquidGlass(c.dark, shape, through, lit = look.clear && look.backdrop != null, look.depth)
 }
 
 /**
@@ -218,7 +229,7 @@ fun Modifier.skinSurface(look: CardLook, c: Colors, shape: Shape, floor: Float =
  * cuánto queda de cristal). [lit] = sobre tu fondo (el inicio): en Ajustes y paneles, con muchas tarjetas en lista, va
  * a media fuerza. (Matemática de la luz por la normal: Kyant0/AndroidLiquidGlass, Apache-2.0, y styropyr0/Prismal, MIT.)
  */
-private fun Modifier.liquidGlass(dark: Boolean, shape: Shape, through: Float, lit: Boolean): Modifier = drawWithCache {
+private fun Modifier.liquidGlass(dark: Boolean, shape: Shape, through: Float, lit: Boolean, depth: GlassDepth): Modifier = drawWithCache {
     val k = through * (if (lit) 1f else 0.5f)
     val outline = shape.createOutline(size, layoutDirection, this)
     fun white(a: Float) = Color.White.copy(alpha = (a * k).coerceIn(0f, 1f))
@@ -235,7 +246,7 @@ private fun Modifier.liquidGlass(dark: Boolean, shape: Shape, through: Float, li
     val rim = rimStrokes(size, radius, GLASS_RIM.toPx(), 0f) { nx, ny -> white((if (dark) 0.8f else 1f) * rimLight(nx, ny, if (dark) 0.07f else 0.12f)) }
     // El resplandor: solo donde la orilla mira a la luz, ancho y tenue.
     // En tres trazos que se van cerrando hacia la orilla: sumados dan un degradado sin escalón a la vista.
-    val glowWidth = GLASS_GLOW.toPx().coerceAtMost(radius.coerceAtLeast(GLASS_RIM.toPx() * 3))
+    val glowWidth = (GLASS_GLOW * depth.scale).toPx().coerceAtMost(radius.coerceAtLeast(GLASS_RIM.toPx() * 3))
     val glow = (1..GLOW_STEPS).flatMap { step ->
         rimStrokes(size, radius, glowWidth * step / GLOW_STEPS, GLASS_RIM.toPx()) { nx, ny -> white((if (dark) 0.2f else 0.22f) / GLOW_STEPS * litSide(nx, ny)) }
     }
@@ -370,9 +381,9 @@ private const val LOW_MEMORY_MB = 128
  * Dibuja [b] detrás, recortado como el fondo de la ventana: se ve la parte del fondo que la tarjeta tapa. Con [lens]
  * (la forma de un cristal) esa parte va doblada en la orilla, como a través de un vidrio grueso ([refracted]): se
  * calcula fuera del hilo principal cuando la tarjeta deja de moverse y, mientras, va la de antes o el fondo sin doblar.
- * En equipos de poca memoria, sin doblar.
+ * [thickness] = qué tan ancho es ese canto. En equipos de poca memoria, sin doblar.
  */
-fun Modifier.blurredBackdrop(b: CardBackdrop, lens: Shape? = null, dark: Boolean = true): Modifier = composed {
+fun Modifier.blurredBackdrop(b: CardBackdrop, lens: Shape? = null, dark: Boolean = true, thickness: GlassDepth = GlassDepth.MEDIUM): Modifier = composed {
     // Dónde está la tarjeta y cuánto mide la ventana: se leen al dibujar (moverla solo la redibuja).
     var at by remember { mutableStateOf(Offset.Zero) }
     var root by remember { mutableStateOf(Size.Zero) }
@@ -381,7 +392,7 @@ fun Modifier.blurredBackdrop(b: CardBackdrop, lens: Shape? = null, dark: Boolean
     val context = LocalContext.current
     val density = LocalDensity.current
     val direction = LocalLayoutDirection.current
-    if (lens != null && !lowMemoryDevice(context)) LaunchedEffect(b.image, lens, dark) {
+    if (lens != null && !lowMemoryDevice(context)) LaunchedEffect(b.image, lens, dark, thickness) {
         snapshotFlow { Triple(at, root, extent) }.collectLatest { (where, window, size) ->
             if (window.width <= 0f || size.width < 1f || size.height < 1f) return@collectLatest
             val radius = when (val o = lens.createOutline(size, direction, density)) {
@@ -390,7 +401,8 @@ fun Modifier.blurredBackdrop(b: CardBackdrop, lens: Shape? = null, dark: Boolean
                 else -> return@collectLatest
             }
             delay(LENS_SETTLE_MS)
-            val (depth, push, inner) = with(density) { Triple(LENS_DEPTH.toPx(), LENS_PUSH.toPx(), INNER_SHADOW.toPx()) }
+            val k = thickness.scale
+            val (depth, push, inner) = with(density) { Triple((LENS_DEPTH * k).toPx(), (LENS_PUSH * k).toPx(), (INNER_SHADOW * k).toPx()) }
             val image = withContext(Dispatchers.Default) { refracted(b, where, window, size, radius, depth, push, inner, if (dark) INNER_SHADOW_ALPHA else INNER_SHADOW_LIGHT) }
             bent = Bent(image, size)
         }

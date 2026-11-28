@@ -12,6 +12,10 @@
     <string name="cards_glass">Szkło</string>
     <string name="cards_opacity">Jak bardzo widać</string>
     <string name="cards_glass_help">Twoja tapeta jest widoczna rozmyta za każdą kartą; nad mapą w tle mapa jest przygaszona.</string>
+    <string name="glass_depth">Grubość szkła</string>
+    <string name="glass_depth_thin">Cienkie</string>
+    <string name="glass_depth_medium">Średnie</string>
+    <string name="glass_depth_thick">Grube</string>
     <string name="cards_themes">Zestawienia</string>
     <string name="language_search">Znajdź swój język</string>
     <string name="language_not_found">Tego języka jeszcze nie ma. Pomóż nam go przetłumaczyć na litedash.dev/translate.</string>

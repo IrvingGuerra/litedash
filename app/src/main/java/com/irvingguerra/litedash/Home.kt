@@ -803,8 +803,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         // Como cristal sobre tu fondo o el resplandor del tema; sobre el mapa de fondo (se mueve), con su relleno.
         val calm = d.dashboard.background == PageBackground.WALLPAPER
         val blurred = rememberWallpaperBackdrop(glass && calm) { d.prefs.wallpaperDim }
-        val homeLook = remember(d.prefs.cardStyle, d.prefs.cardOpacity, blurred, calm) {
-            CardLook(d.prefs.cardStyle, d.prefs.cardOpacity, blurred, calm)
+        val homeLook = remember(d.prefs.cardStyle, d.prefs.cardOpacity, d.prefs.glassDepth, blurred, calm) {
+            CardLook(d.prefs.cardStyle, d.prefs.cardOpacity, blurred, calm, d.prefs.glassDepth)
         }
         // El fondo de un Diseño que espera internet: se baja cuando haya red (también con Ajustes o un panel abierto).
         PendingDesignWallpaper(d.prefs)

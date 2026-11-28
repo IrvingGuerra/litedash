@@ -14,6 +14,10 @@
     <string name="cards_glass">Verre</string>
     <string name="cards_opacity">Visibilité</string>
     <string name="cards_glass_help">Votre fond d\'écran apparaît flou derrière chaque carte ; sur un fond de carte, la carte apparaît atténuée.</string>
+    <string name="glass_depth">Épaisseur du verre</string>
+    <string name="glass_depth_thin">Fin</string>
+    <string name="glass_depth_medium">Moyen</string>
+    <string name="glass_depth_thick">Épais</string>
     <string name="cards_themes">Combinaisons</string>
     <string name="language_search">Trouvez votre langue</string>
     <string name="language_not_found">Cette langue n\'est pas encore là. Aidez-nous à la traduire sur litedash.dev/translate.</string>

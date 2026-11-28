@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.edit
 import com.irvingguerra.litedash.core.ui.CardStyle
+import com.irvingguerra.litedash.core.ui.GlassDepth
 import com.irvingguerra.litedash.feature.car.CarColors
 import com.irvingguerra.litedash.feature.car.CarPaint
 import com.irvingguerra.litedash.feature.car.DEFAULT_GLOSS
@@ -40,6 +41,8 @@ internal object PrefKeys {
     const val CARD_COLOR = "card_color_argb"
     const val CARD_STYLE = "card_style"
     const val CARD_OPACITY = "card_opacity"
+    /** Qué tan grueso se ve el vidrio de las tarjetas: thin, medium (sin guardar) o thick. */
+    const val GLASS_DEPTH = "glass_depth"
     /** Cuánto se oscurece (o aclara) tu fondo de pantalla en el inicio (0–[MAX_WALLPAPER_DIM]). */
     const val WALLPAPER_DIM = "wallpaper_dim"
     const val CAR_MODEL = "car_model"
@@ -471,7 +474,8 @@ class Preferences(context: Context) {
     /** Lisas o de vidrio (lo de fábrica). */
     var cardStyle by mapped(PrefKeys.CARD_STYLE, CardStyle::fromStored) { it.stored }
 
-    /** El filo de luz de las de vidrio: sin él (lo de fábrica), delgado o marcado. */
+    /** Qué tan grueso se ve el vidrio: fino, medio (lo de fábrica) o grueso. */
+    var glassDepth by mapped(PrefKeys.GLASS_DEPTH, GlassDepth::fromStored) { it.stored }
 
     // Cuánto se ven las de vidrio (0–1); se arrastra en vivo y se guarda al soltar.
     private var _cardOpacity by mutableFloatStateOf(p.getFloat(PrefKeys.CARD_OPACITY, DEFAULT_CARD_OPACITY))

@@ -238,7 +238,7 @@ internal fun ComponentActivity.LiteDashContent(d: Dependencies, revision: Int, c
     LaunchedEffect(hideStatusBar, revision) { applyStatusBar(window, hideStatusBar) }
     ApplyBrightness(d.prefs, night, revision)
     // La piel de las tarjetas (lisas o de vidrio) vale para toda la app; el inicio le suma tu fondo desenfocado.
-    val look = remember(d.prefs.cardStyle, d.prefs.cardOpacity) { CardLook(d.prefs.cardStyle, d.prefs.cardOpacity) }
+    val look = remember(d.prefs.cardStyle, d.prefs.cardOpacity, d.prefs.glassDepth) { CardLook(d.prefs.cardStyle, d.prefs.cardOpacity, depth = d.prefs.glassDepth) }
     LiteDashTheme(dark = dark, scale = d.prefs.scale, accent = d.prefs.accentColor, cards = d.prefs.cardColor) {
         CompositionLocalProvider(LocalCardLook provides look) { AlertHost(content) }
     }

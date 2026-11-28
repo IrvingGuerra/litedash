@@ -12,6 +12,10 @@
     <string name="cards_glass">Sticlă</string>
     <string name="cards_opacity">Cât se văd</string>
     <string name="cards_glass_help">Imaginea ta de fundal se vede estompată în spatele fiecărui card; peste harta de fundal, harta se vede atenuată.</string>
+    <string name="glass_depth">Grosimea sticlei</string>
+    <string name="glass_depth_thin">Subțire</string>
+    <string name="glass_depth_medium">Medie</string>
+    <string name="glass_depth_thick">Groasă</string>
     <string name="cards_themes">Combinații</string>
     <string name="language_search">Caută limba ta</string>
     <string name="language_not_found">Limba aceasta nu există încă. Ajută-ne să o traducem pe litedash.dev/translate.</string>

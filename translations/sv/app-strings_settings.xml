@@ -12,6 +12,10 @@
     <string name="cards_glass">Glas</string>
     <string name="cards_opacity">Hur synliga</string>
     <string name="cards_glass_help">Din bakgrundsbild syns suddig bakom varje kort; över en karta i bakgrunden syns kartan dämpad.</string>
+    <string name="glass_depth">Glastjocklek</string>
+    <string name="glass_depth_thin">Tunt</string>
+    <string name="glass_depth_medium">Mellan</string>
+    <string name="glass_depth_thick">Tjockt</string>
     <string name="cards_themes">Kombinationer</string>
     <string name="language_search">Hitta ditt språk</string>
     <string name="language_not_found">Det språket finns inte än. Hjälp oss översätta på litedash.dev/translate.</string>
