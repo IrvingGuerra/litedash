@@ -30,11 +30,6 @@ data class BroadcastMeta(
     }
 
     companion object {
-        // El widget multimedia Clinkway ("com.clw").
-        private const val CLW_INFO = "com.clw.intent.MEDIA_INFO"
-        private const val CLW_STATE = "com.clw.intent.MEDIA_PLAY_STATE"
-        /** Clinkway: `Media_Type` 3 = Bluetooth. */
-        private const val CLW_BLUETOOTH = 3
         private const val POWERAMP = "com.maxmpz.audioplayer"
         // AVRCP de Android (5–8): manda MediaMetadata y PlaybackState, no textos (idea de AvrcpMeta de StradaOS, GPL-3.0).
         private const val AVRCP_ANDROID = "android.bluetooth.avrcp-controller.profile."
@@ -75,36 +70,24 @@ data class BroadcastMeta(
             "com.ts.bt.music.info", "com.fyt.bt.music.id3",
             "com.autochips.bluetooth.MUSIC_INFO", "com.autochips.bt.music.id3",
             "com.nwd.action.ACTION_BT_MUSIC_ID3",
-            AutochipsBluetooth.MEDIA, AutochipsBluetooth.PLAYBACK, CLW_INFO, CLW_STATE,
+            AutochipsBluetooth.MEDIA, AutochipsBluetooth.PLAYBACK, ClinkwayBluetooth.INFO, ClinkwayBluetooth.STATE,
         )
 
         /** Lee un aviso; null si no dice nada útil (ni canción ni estado). */
         fun parse(action: String, extras: Map<String, Any?>): BroadcastMeta? {
             // Si alguna ROM lo manda con textos, sigue la lectura genérica.
             if (action == TRACK_EVENT) trackEvent(extras)?.let { return it }
-            // Los avisos con claves de una marca los lee su perfil de Bluetooth.
-            val meta = FactoryBluetoothKind.readers[action]?.readBroadcast(action, extras) ?: when (action) {
-                CLW_INFO, CLW_STATE -> {
-                    val info = action == CLW_INFO
-                    BroadcastMeta(
-                        title = if (info) extras.text("Media_Title") else null,
-                        artist = if (info) extras.text("Media_Artist") else null,
-                        playing = if (info) null else playingFlag(extras["Play_State"]),
-                        pkg = null,
-                        bluetooth = (extras["Media_Type"] as? Number)?.toInt() == CLW_BLUETOOTH,
-                    )
-                }
-                // Poweramp (PowerampAPI, build 948+): la canción en `title`/`artist` sueltos (además del Bundle `track`) y el
-                // estado como `paused`; no dice su paquete.
-                else -> BroadcastMeta(
-                    title = extras.text("track", "title", "song", "name", "id3_title", "music_title", "TITLE"),
-                    artist = extras.text("artist", "singer", "id3_artist", "music_artist", "ARTIST"),
-                    playing = sequenceOf("playing", "isPlaying", "playstate").firstNotNullOfOrNull { playingFlag(extras[it]) }
-                        ?: (extras["paused"] as? Boolean)?.not(),
-                    pkg = extras.text("package", "packageName", "pkg") ?: POWERAMP.takeIf { action.startsWith("$it.") },
-                    bluetooth = isBluetooth(action),
-                )
-            }
+            // Los avisos con claves de una marca los lee su perfil de Bluetooth; los demás, con las claves de siempre.
+            // Poweramp (PowerampAPI, build 948+): la canción en `title`/`artist` sueltos (además del Bundle `track`) y el
+            // estado como `paused`; no dice su paquete.
+            val meta = FactoryBluetoothKind.readers[action]?.readBroadcast(action, extras) ?: BroadcastMeta(
+                title = extras.text("track", "title", "song", "name", "id3_title", "music_title", "TITLE"),
+                artist = extras.text("artist", "singer", "id3_artist", "music_artist", "ARTIST"),
+                playing = sequenceOf("playing", "isPlaying", "playstate").firstNotNullOfOrNull { playingFlag(extras[it]) }
+                    ?: (extras["paused"] as? Boolean)?.not(),
+                pkg = extras.text("package", "packageName", "pkg") ?: POWERAMP.takeIf { action.startsWith("$it.") },
+                bluetooth = isBluetooth(action),
+            )
             return meta.takeIf { it.title != null || it.artist != null || it.playing != null }
         }
 

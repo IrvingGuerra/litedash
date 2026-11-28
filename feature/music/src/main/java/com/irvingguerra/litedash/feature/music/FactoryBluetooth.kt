@@ -93,7 +93,25 @@ internal object TopWayBluetooth : FactoryBluetoothKind(
 
 internal object MicrontekBluetooth : FactoryBluetoothKind("microntek", HeadUnit.MICRONTEK, BrandBluetooth("com.microntek.bt", HeadUnit.MICRONTEK))
 
-internal object ClinkwayBluetooth : FactoryBluetoothKind("clinkway", HeadUnit.CLINKWAY, BrandBluetooth("com.clw.btmusic", HeadUnit.CLINKWAY))
+/** Clinkway: su widget multimedia avisa canción y estado de cualquier fuente; `Media_Type` 3 = Bluetooth. */
+internal object ClinkwayBluetooth : FactoryBluetoothKind("clinkway", HeadUnit.CLINKWAY, BrandBluetooth("com.clw.btmusic", HeadUnit.CLINKWAY)) {
+    const val INFO = "com.clw.intent.MEDIA_INFO"
+    const val STATE = "com.clw.intent.MEDIA_PLAY_STATE"
+    private const val BLUETOOTH = 3
+
+    override val broadcasts = listOf(INFO, STATE)
+
+    override fun readBroadcast(action: String, extras: Map<String, Any?>): BroadcastMeta {
+        val info = action == INFO
+        return BroadcastMeta(
+            title = if (info) extras.text("Media_Title") else null,
+            artist = if (info) extras.text("Media_Artist") else null,
+            playing = if (info) null else playingFlag(extras["Play_State"]),
+            pkg = null,
+            bluetooth = (extras["Media_Type"] as? Number)?.toInt() == BLUETOOTH,
+        )
+    }
+}
 
 /** Goodocom (gocsdk): módulo que usan varias marcas; dice que hay chip propio, no la familia. */
 internal object GoodocomBluetooth : FactoryBluetoothKind(
