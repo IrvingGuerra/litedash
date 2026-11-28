@@ -35,12 +35,15 @@ internal abstract class FactoryBluetoothKind(
     companion object {
         /**
          * Los perfiles de marca en el orden de prioridad de siempre (antes una sola lista `BRAND_BLUETOOTH`; las nuevas,
-         * NWD, Jancar y Reglink, al final según las estadísticas de 315 pantallas, 2026-11-13).
+         * NWD, Jancar y Reglink, al final según las estadísticas de 315 pantallas, 2026-11-13). Perezosa: si se armara al
+         * iniciarse esta clase, el perfil que se tocara primero quedaría como null en la lista (ProfileInitOrderTest).
          */
-        val all: List<FactoryBluetoothKind> = listOf(
-            FytBluetooth, TopWayBluetooth, MicrontekBluetooth, ClinkwayBluetooth, GoodocomBluetooth,
-            AutochipsBluetooth, YfTechBluetooth, NwdBluetooth, JancarBluetooth, ReglinkBluetooth,
-        )
+        val all: List<FactoryBluetoothKind> by lazy {
+            listOf(
+                FytBluetooth, TopWayBluetooth, MicrontekBluetooth, ClinkwayBluetooth, GoodocomBluetooth,
+                AutochipsBluetooth, YfTechBluetooth, NwdBluetooth, JancarBluetooth, ReglinkBluetooth,
+            )
+        }
 
         /** El perfil de la familia de la pantalla ([HeadUnit.of]); sin uno de marca, el genérico. */
         fun forFamily(family: HeadUnit): FactoryBluetoothKind =

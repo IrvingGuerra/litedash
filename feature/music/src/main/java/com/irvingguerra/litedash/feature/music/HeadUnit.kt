@@ -64,11 +64,14 @@ internal enum class HeadUnit(
         /** La app de Bluetooth de marca instalada que toca la música (criterio de [of]); null si no hay. Bloquea. */
         fun bluetoothMusicApp(context: Context): String? = bluetoothMusicApps.firstOrNull(context::hasPackage)
 
+        // Perezosas: los perfiles de Bluetooth nombran a HeadUnit al crearse; si al iniciarse HeadUnit leyera la lista de los
+        // perfiles, el que llegara primero (un aviso, la calibración) vería la lista a medias (ProfileInitOrderTest).
+
         /** Todas las apps de Bluetooth de marca, en orden de prioridad (para la familia en reportes y estadísticas). */
-        val bluetoothApps: List<String> = BRAND_BLUETOOTH.map { it.pkg }
+        val bluetoothApps: List<String> by lazy { BRAND_BLUETOOTH.map { it.pkg } }
 
         /** Las que tocan la música del celular (las demás son servicios): la fuente Bluetooth sin app enlazada. */
-        val bluetoothMusicApps: List<String> = BRAND_BLUETOOTH.filter { it.music }.map { it.pkg }
+        val bluetoothMusicApps: List<String> by lazy { BRAND_BLUETOOTH.filter { it.music }.map { it.pkg } }
 
         /** Las radios de fábrica con perfil, en el orden en que se prueban; si hay varias, gana la primera. */
         val factoryRadios: List<FactoryRadioKind> = listOf(HcnKind, NwdKind, TopWayKind)
