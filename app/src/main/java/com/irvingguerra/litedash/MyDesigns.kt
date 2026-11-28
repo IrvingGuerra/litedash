@@ -73,8 +73,8 @@ internal val Preferences.mine: List<MyDesign>
     }
 
 /**
- * Guarda tu inicio de ahora como un Diseño tuyo llamado [name]: la página que se ve, lo de toda la app y una copia de tu
- * fondo. Queda como el Diseño puesto. Si la foto no se pudo copiar, no se guarda nada. Desde el hilo principal.
+ * Guarda tu inicio de ahora como un Diseño tuyo llamado [name]: la página que se ve, lo de toda la app y una copia del
+ * fondo que se ve en ella. Queda como el Diseño puesto. Si la foto no se pudo copiar, no se guarda nada. Desde el hilo principal.
  */
 internal fun saveMyDesign(d: Dependencies, context: Context, scope: CoroutineScope, name: String) {
     val prefs = d.prefs
@@ -82,15 +82,15 @@ internal fun saveMyDesign(d: Dependencies, context: Context, scope: CoroutineSco
     val look = prefs.look
     val id = MyDesign.PREFIX + System.currentTimeMillis().toString(36)
     scope.launch {
-        val image = keepDesignImage(context, id) ?: return@launch
-        prefs.myDesigns = MyDesign.encode(prefs.mine + MyDesign(id, name, look, page.copy(page = 0), image))
+        val image = keepDesignImage(context, id, page.image) ?: return@launch
+        prefs.myDesigns = MyDesign.encode(prefs.mine + MyDesign(id, name, look, page.copy(page = 0, image = null), image))
         prefs.design = id
     }
 }
 
 /**
  * Aplica tu Diseño [mine] a la página que se ve y a lo de toda la app, y deja listo «Deshacer», igual que uno de fábrica
- * ([applyDesign]); su foto se pone después (la tuya de ahora se guarda aparte antes). Desde el hilo principal.
+ * ([applyDesign]); su foto se pone después, solo en esta página. Desde el hilo principal.
  */
 internal fun applyMyDesign(d: Dependencies, context: Context, scope: CoroutineScope, mine: MyDesign) {
     val prefs = d.prefs
@@ -99,17 +99,18 @@ internal fun applyMyDesign(d: Dependencies, context: Context, scope: CoroutineSc
     prefs.put(mine.over(now, ownCar = !prefs.carModel.isNullOrEmpty()))
     d.dashboard.place(mine.page)
     val applied = d.dashboard.snapshot()?.layout ?: return
-    val undo = DesignUndo(prefs.design, now, before, applied, pending = prefs.designWallpaper)
-    prefs.designUndo = undo.encode()
+    prefs.designUndo = DesignUndo(prefs.design, now, before, applied, pending = prefs.designWallpaper).encode()
     prefs.design = mine.id
     DesignNotice.showOwn(mine.name)
     val turn = ++designTurn
     // El fondo de un Diseño de fábrica que esperaba internet ya no: manda este.
     prefs.designWallpaper = null
+    // Su foto va solo en esta página, como su imagen propia (sin foto: sin imagen, el resplandor del tema).
+    val page = before.page
+    val key = newPageKey()
     scope.launch {
-        if (!keepOwnWallpaper(context) || turn != designTurn) return@launch
-        prefs.designUndo = undo.copy(wallpaper = true).encode()
-        putDesignImage(context, mine.id.takeIf { mine.image }) { turn == designTurn }
+        putDesignImage(context, key, mine.id.takeIf { mine.image })
+        if (turn == designTurn) d.dashboard.setImage(page, key)
     }
 }
 

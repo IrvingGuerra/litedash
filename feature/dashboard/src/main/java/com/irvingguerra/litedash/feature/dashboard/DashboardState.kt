@@ -28,6 +28,20 @@ class DashboardState(private val store: DashboardStore) {
     /** El fondo de la página que se ve. */
     val background: PageBackground get() = backgrounds.getOrElse(page) { PageBackground.WALLPAPER }
 
+    /** La imagen propia de cada página (su llave; null = la de todas las páginas). */
+    var images by mutableStateOf(List(pageCount) { store.image(it) })
+        private set
+
+    /** La imagen propia de la página que se ve. */
+    val image: String? get() = images.getOrNull(page)
+
+    /** Le pone a la página [p] su imagen propia [key] (null = la de todas). */
+    fun setImage(p: Int, key: String?) {
+        if (p !in 0 until pageCount) return
+        store.setImage(p, key)
+        images = List(pageCount) { store.image(it) }
+    }
+
     /** Lo de las otras páginas en esta cuadrícula, como quedó la última vez que se vio (volver a ellas no lee el disco). */
     private val pageTiles = HashMap<Int, List<Tile>>()
 
@@ -107,6 +121,7 @@ class DashboardState(private val store: DashboardStore) {
         store.pages = pageCount + 1
         pageCount = store.pages
         backgrounds = List(pageCount) { store.background(it) }
+        images = List(pageCount) { store.image(it) }
         goTo(pageCount - 1)
         return true
     }
@@ -117,6 +132,7 @@ class DashboardState(private val store: DashboardStore) {
         store.removePage(p)
         pageCount = store.pages
         backgrounds = List(pageCount) { store.background(it) }
+        images = List(pageCount) { store.image(it) }
         pageTiles.clear()
         page = if (page >= p) page - 1 else page
         tiles = grid?.let { load(it, page) }.orEmpty()
@@ -183,7 +199,7 @@ class DashboardState(private val store: DashboardStore) {
     val pageTemplate: Template? get() = store.template(page)
 
     /** La página que se ve tal como está ([restore] la regresa así): su acomodo en esta cuadrícula, su fondo y su plantilla. */
-    fun snapshot(): PageSnapshot? = grid?.let { PageSnapshot(page, it, formatLayout(tiles), background, store.template(page)) }
+    fun snapshot(): PageSnapshot? = grid?.let { PageSnapshot(page, it, formatLayout(tiles), background, store.template(page), image) }
 
     /**
      * El acomodo guardado [s] (el de un Diseño tuyo) como queda en la cuadrícula de ahora: en la misma, tal cual; en una
@@ -216,6 +232,7 @@ class DashboardState(private val store: DashboardStore) {
         store.save(s.grid, restored, s.page)
         store.setTemplate(s.page, s.template)
         setBackground(s.page, s.background)
+        setImage(s.page, s.image)
         pageTiles.remove(s.page)
         val c = grid
         if (s.page == page && c != null) tiles = if (c == s.grid) restored else load(c, page)
@@ -275,9 +292,9 @@ internal fun samePlaces(a: List<Tile>, b: List<Tile>): Boolean =
 
 /**
  * Una página como estaba ([DashboardState.snapshot]): su número, la cuadrícula, su acomodo ahí (el texto que guarda
- * [DashboardStore]), su fondo y su plantilla.
+ * [DashboardStore]), su fondo, su plantilla y su imagen propia ([image]: la llave; null = la de todas las páginas).
  */
-data class PageSnapshot(val page: Int, val grid: Grid, val layout: String, val background: PageBackground, val template: Template?) {
+data class PageSnapshot(val page: Int, val grid: Grid, val layout: String, val background: PageBackground, val template: Template?, val image: String? = null) {
     companion object {
         /** La cuadrícula de su clave ("20x10"); null si no lo es. */
         fun grid(key: String): Grid? = parseGrid(key)

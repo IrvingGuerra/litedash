@@ -179,6 +179,8 @@
     <string name="design_save">Guardar</string>
     <string name="design_delete_title">¿Eliminar el diseño %1$s?</string>
     <string name="design_delete_message">Se quita de tus Diseños. Tu inicio de ahora no cambia.</string>
+    <string name="page_wallpaper_own">Fondo propio de esta página</string>
+    <string name="page_wallpaper_own_help">Apagado, esta página usa el fondo de todas.</string>
     <string name="add">Agregar</string>
     <string name="add_tile">Agregar al inicio</string>
     <string name="add_widget">Agregar widget</string>

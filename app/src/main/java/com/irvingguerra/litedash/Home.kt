@@ -802,19 +802,23 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         val glass = d.prefs.cardStyle == CardStyle.GLASS
         // Como cristal sobre tu fondo o el resplandor del tema; sobre el mapa de fondo (se mueve), con su relleno.
         val calm = d.dashboard.background == PageBackground.WALLPAPER
-        val blurred = rememberWallpaperBackdrop(glass && calm) { d.prefs.wallpaperDim }
+        // El fondo de esta página: su imagen propia o la de todas.
+        val wallpaper = d.dashboard.image
+        ShownWallpaper(wallpaper)
+        UnusedPageImages(d)
+        val blurred = rememberWallpaperBackdrop(glass && calm, wallpaper) { d.prefs.wallpaperDim }
         val homeLook = remember(d.prefs.cardStyle, d.prefs.cardOpacity, d.prefs.glassDepth, blurred, calm) {
             CardLook(d.prefs.cardStyle, d.prefs.cardOpacity, blurred, calm, d.prefs.glassDepth)
         }
         // El fondo de un Diseño que espera internet: se baja cuando haya red (también con Ajustes o un panel abierto).
         PendingDesignWallpaper(d.prefs)
-        ThemedDesignWallpaper()
+        ThemedDesignWallpaper(wallpaper)
         if (panel == null) CompositionLocalProvider(LocalHomeCovered provides homeCovered, LocalCardLook provides homeLook) {
             Box(Modifier.fillMaxSize().hiddenWhen { homeCovered }) {
                 // Detrás de todo, el fondo de esta página: tu imagen (Inicio y apariencia → Inicio → Fondo de pantalla) o
                 // el mapa vivo, contigo en el hueco que dejan los widgets.
                 when (d.dashboard.background) {
-                    PageBackground.WALLPAPER -> HomeWallpaper(d.prefs)
+                    PageBackground.WALLPAPER -> HomeWallpaper(d.prefs, key = wallpaper)
                     // Con algo en grande encima (la música o el mapa) se queda quieto: no se ve.
                     PageBackground.MAP -> MapBackdrop(
                         d, remember(d.dashboard.shown, d.dashboard.grid, board, rootSize) { mapFocus(d.dashboard, board, rootSize) },

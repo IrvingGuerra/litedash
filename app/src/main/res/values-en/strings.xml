@@ -178,6 +178,8 @@
     <string name="design_save">Save</string>
     <string name="design_delete_title">Delete the design %1$s?</string>
     <string name="design_delete_message">It is removed from your Designs. Your current home screen does not change.</string>
+    <string name="page_wallpaper_own">This page\'s own wallpaper</string>
+    <string name="page_wallpaper_own_help">When off, this page uses the wallpaper of all pages.</string>
     <string name="add">Add</string>
     <string name="add_tile">Add to home</string>
     <string name="add_widget">Add widget</string>

@@ -176,9 +176,9 @@ fun Design.matches(now: DesignLook, ownCar: Boolean) = over(now, ownCar) == now
 
 /**
  * Lo de antes del último Diseño, para «Deshacer» (un nivel): el Diseño de antes ([design]), lo de toda la app ([look]),
- * la página como estaba ([page]) y cómo la dejó el Diseño ([applied], para saber si alguien la movió después), si el
- * Diseño cambió el fondo ([wallpaper]: al deshacer regresa tu foto, guardada aparte en [OwnWallpaper]) y el fondo que
- * esperaba internet ([pending]).
+ * la página como estaba ([page], con su imagen propia) y cómo la dejó el Diseño ([applied], para saber si alguien la
+ * movió después), el fondo que esperaba internet ([pending]) y [wallpaper]: solo lo escribían las versiones de antes del
+ * fondo por página (el Diseño cambió el fondo de todas: al deshacer regresa tu foto, guardada aparte en [OwnWallpaper]).
  */
 internal data class DesignUndo(
     val design: String?,
@@ -247,6 +247,7 @@ internal fun JSONObject.putPage(page: PageSnapshot) {
     put("layout", page.layout)
     put("background", page.background.stored)
     putOpt("template", page.template?.name)
+    putOpt("pageImage", page.image)
 }
 
 /** Lo guardado por [putPage]; null si la cuadrícula no se entiende. Lanza [JSONException] si falta algo. */
@@ -256,6 +257,7 @@ internal fun JSONObject.page(): PageSnapshot? = PageSnapshot(
     layout = getString("layout"),
     background = PageBackground.fromStored(getString("background")),
     template = optStringOrNull("template")?.let { n -> Template.entries.firstOrNull { it.name == n } },
+    image = optStringOrNull("pageImage"),
 )
 
 /**
@@ -299,11 +301,28 @@ object DesignNotice {
 internal var designTurn = 0
 
 /**
+ * El fondo de un Diseño que espera internet ([Preferences.designWallpaper]): el [id] del fondo de LiteDash y la imagen
+ * propia de página donde va ([key]; null = el fondo de todas, lo que guardaban las versiones de antes del fondo por página).
+ */
+internal data class PendingWallpaper(val key: String?, val id: String) {
+    fun encode() = if (key == null) id else "$key/$id"
+
+    companion object {
+        fun decode(text: String?): PendingWallpaper? = when {
+            text.isNullOrEmpty() -> null
+            '/' in text -> PendingWallpaper(text.substringBefore('/'), text.substringAfter('/'))
+            else -> PendingWallpaper(null, text)
+        }
+    }
+}
+
+/**
  * Aplica [design] a la página que se ve (no toca las demás) y a lo de toda la app, de una vez, y deja listo «Deshacer».
- * Su fondo se baja después: tu foto se guarda aparte antes (una sola vez: el fondo de otro Diseño no la reemplaza); sin
- * internet todo lo demás ya quedó y el fondo es el resplandor del tema hasta que haya red ([prefs.designWallpaper], se
- * baja una sola vez). Con [keepSun], «Día y noche» se queda ([Design.over]) y el fondo es el de la pareja que toca ahora
- * ([dark] = la app va en oscuro). Desde el hilo principal.
+ * Su fondo va SOLO en esta página, como su imagen propia: se baja después y entonces se pone (el fondo de todas las
+ * páginas, tu foto, no se toca; la imagen que tenía la página se queda para «Deshacer»). Sin internet la página queda
+ * con el resplandor del tema hasta que haya red ([prefs.designWallpaper], se baja una sola vez). Con [keepSun], «Día y
+ * noche» se queda ([Design.over]) y el fondo es el de la pareja que toca ahora ([dark] = la app va en oscuro). Desde el
+ * hilo principal.
  */
 internal fun applyDesign(d: Dependencies, context: Context, scope: CoroutineScope, design: Design, dark: Boolean, keepSun: Boolean = true) {
     val prefs = d.prefs
@@ -312,8 +331,7 @@ internal fun applyDesign(d: Dependencies, context: Context, scope: CoroutineScop
     prefs.put(design.over(now, ownCar = !prefs.carModel.isNullOrEmpty(), keepSun))
     d.dashboard.template(design.template)
     val applied = d.dashboard.snapshot()?.layout ?: return
-    val undo = DesignUndo(prefs.design, now, before, applied, pending = prefs.designWallpaper)
-    prefs.designUndo = undo.encode()
+    prefs.designUndo = DesignUndo(prefs.design, now, before, applied, pending = prefs.designWallpaper).encode()
     prefs.design = design.id
     DesignNotice.show(design)
     val turn = ++designTurn
@@ -322,16 +340,16 @@ internal fun applyDesign(d: Dependencies, context: Context, scope: CoroutineScop
     val own = design.wallpaper ?: return
     // Con «Día y noche» puesto el tema no cambia: va la pareja del tema de ahora; si no, el fondo del Diseño tal cual.
     val id = if (keepSun && now.theme == ThemeMode.SUN) themedWallpaper(own, dark) ?: own else currentWallpaper(own)
+    val page = before.page
+    val key = newPageKey()
     scope.launch {
-        if (!keepOwnWallpaper(context) || turn != designTurn) return@launch
-        prefs.designUndo = undo.copy(wallpaper = true).encode()
-        val got = putLiteDashWallpaper(context, id, byDesign = true) { turn == designTurn }
+        val got = putLiteDashWallpaper(context, id, key, byDesign = true) { turn == designTurn }
+        if (turn != designTurn || got == WallpaperFetch.SKIPPED) return@launch
+        // Ya con su foto lista (o sin internet: sin imagen, el resplandor del tema, hasta que haya red) se le pone a la página.
+        d.dashboard.setImage(page, key)
         // Su pareja se guarda de una vez: al anochecer (o amanecer) puede no haber red.
         if (got == WallpaperFetch.DONE) themedWallpaper(id, dark = themedWallpaper(id, true) != id)?.let { keepWallpaper(context, it) }
-        if (got != WallpaperFetch.OFFLINE || turn != designTurn) return@launch
-        // Sin internet: sin imagen (el resplandor del tema) hasta que haya red.
-        clearWallpaper(context)
-        prefs.designWallpaper = id
+        if (got == WallpaperFetch.OFFLINE) prefs.designWallpaper = PendingWallpaper(key, id).encode()
     }
 }
 

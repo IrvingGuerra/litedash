@@ -344,6 +344,40 @@ private val INTRO = SavedImage("intro.png", 1024, ImageFit.HALF_SCREEN)
 /** El fondo del inicio: una foto que cubre toda la pantalla (sin transparencia). */
 private val WALLPAPER = SavedImage(OwnWallpaper.CURRENT, 1920, ImageFit.COVER_SCREEN, opaque = true, onBump = ::forgetWallpaperCopies)
 
+/**
+ * Las imágenes propias de las páginas, por su llave ([DashboardState.images]): cada página puede llevar su fondo en vez
+ * del de todas ([WALLPAPER]). Viven en files/pages/ con lo que va con ellas (cuál fondo de LiteDash es y si lo puso un
+ * Diseño).
+ */
+private val pageImages = HashMap<String, SavedImage>()
+
+private const val PAGES_DIR = "pages"
+
+/** El fondo de la llave [key]; null = el de todas las páginas. */
+private fun slot(key: String?): SavedImage =
+    if (key == null) WALLPAPER
+    else pageImages.getOrPut(key) { SavedImage("$PAGES_DIR/$key.img", 1920, ImageFit.COVER_SCREEN, opaque = true, onBump = ::forgetWallpaperCopies) }
+
+/** La llave del fondo que se ve en el inicio (lo dice [ShownWallpaper]): lo que tapa el inicio usa ese mismo. */
+private var shownKey by mutableStateOf<String?>(null)
+
+/**
+ * El inicio avisa qué fondo se ve (el propio de la página, [key], o el de todas) y suelta de memoria las imágenes de las
+ * otras páginas (cada una ocupa una pantalla entera); en equipos de poca memoria, también la de todas si no se ve.
+ */
+@Composable
+internal fun ShownWallpaper(key: String?) {
+    val context = LocalContext.current
+    LaunchedEffect(key) {
+        shownKey = key
+        for ((k, image) in pageImages) if (k != key) image.release()
+        if (key != null && lowMemoryDevice(context)) WALLPAPER.release()
+    }
+}
+
+/** Una llave nueva para la imagen propia de una página. */
+internal fun newPageKey(): String = "p" + System.currentTimeMillis().toString(36)
+
 /** La imagen del modo estacionado (en vez del reloj), completa; con transparencia si es un logo. */
 private val PARKED = SavedImage("parked.png", 1920, ImageFit.FIT_SCREEN)
 
@@ -522,9 +556,13 @@ fun LogoIntro(onDone: () -> Unit) {
  * y con tarjetas de vidrio, el resplandor del tema.
  */
 @Composable
-fun HomeWallpaper(prefs: Preferences, asInWindow: Boolean = false) {
+fun HomeWallpaper(prefs: Preferences, asInWindow: Boolean = false, key: String? = shownKey) {
     val c = LocalColors.current
-    val image = rememberImage(WALLPAPER).image
+    val loaded = rememberImage(slot(key))
+    // Al pasar a una página con otro fondo, el de antes se queda el instante en que se lee el nuevo (sin parpadeo).
+    var last by remember { mutableStateOf<ImageBitmap?>(null) }
+    if (loaded.loaded) last = loaded.image
+    val image = if (loaded.loaded) loaded.image else last
     val floor = rememberLegibleFloor(image)
     if (image == null) {
         // Sin imagen, el vidrio se luce sobre el resplandor del tema.
@@ -560,8 +598,8 @@ private fun rememberLegibleFloor(image: ImageBitmap?): Float {
  * ([clear]) es otra copia: menos desenfocada y con el color más vivo. null = sin fondo (o aún no está).
  */
 @Composable
-private fun rememberBlurredWallpaper(wanted: Boolean, clear: Boolean): Pair<ImageBitmap, Blurred>? {
-    val image = if (wanted) rememberImage(WALLPAPER).image else null
+private fun rememberBlurredWallpaper(wanted: Boolean, clear: Boolean, key: String? = shownKey): Pair<ImageBitmap, Blurred>? {
+    val image = if (wanted) rememberImage(slot(key)).image else null
     // La copia nítida que el canto del cristal dobla: solo para el cristal y con memoria de sobra.
     val context = LocalContext.current
     val sharp = clear && !lowMemoryDevice(context)
@@ -585,8 +623,8 @@ private fun rememberBlurredWallpaper(wanted: Boolean, clear: Boolean): Pair<Imag
  * de la tarjeta se lea. null = sin fondo (o aún no está).
  */
 @Composable
-fun rememberWallpaperBackdrop(wanted: Boolean, dim: () -> Float): CardBackdrop? {
-    val pair = rememberBlurredWallpaper(wanted, clear = true)
+fun rememberWallpaperBackdrop(wanted: Boolean, key: String? = shownKey, dim: () -> Float): CardBackdrop? {
+    val pair = rememberBlurredWallpaper(wanted, clear = true, key)
     val floor = rememberLegibleFloor(pair?.first)
     val b = pair?.second ?: return null
     val c = LocalColors.current
@@ -844,12 +882,13 @@ private val IMAGE_TYPES = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp") +
  * ([SavedImage.lock]): gana el último que se eligió.
  */
 @Composable
-fun WallpaperSettings(prefs: Preferences) {
+fun WallpaperSettings(prefs: Preferences, key: String? = null) {
     val c = LocalColors.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var chosen by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(WALLPAPER.version) { chosen = withContext(Dispatchers.IO) { liteDashWallpaper(context) } }
+    val target = slot(key)
+    var chosen by remember(key) { mutableStateOf<String?>(null) }
+    LaunchedEffect(key, target.version) { chosen = withContext(Dispatchers.IO) { liteDashWallpaper(context, key) } }
     val choices by produceState<List<WallpaperChoice>?>(null) { value = loadWallpapers(context) }
     var downloading by remember { mutableStateOf<String?>(null) }
     var failed by remember { mutableStateOf(false) }
@@ -879,7 +918,7 @@ fun WallpaperSettings(prefs: Preferences) {
                             // Elegido a mano: el fondo de un Diseño que esperaba internet ya no se pone solo.
                             prefs.designWallpaper = null
                             scope.launch {
-                                failed = putLiteDashWallpaper(context, w.id) != WallpaperFetch.DONE
+                                failed = putLiteDashWallpaper(context, w.id, key) != WallpaperFetch.DONE
                                 downloading = null
                             }
                         },
@@ -897,11 +936,11 @@ fun WallpaperSettings(prefs: Preferences) {
         Label(stringResource(R.string.wallpaper_own), Typography.label, c.textMuted)
     }
     val forget: suspend () -> Unit = {
-        withContext(Dispatchers.IO) { wallpaperMarker(context).delete() }
+        withContext(Dispatchers.IO) { wallpaperMarker(context, key).delete() }
         chosen = null
         prefs.designWallpaper = null
     }
-    if (imageButtons(WALLPAPER, busy = downloading != null, onPicked = { forget() }, onRemoved = forget) == true) WallpaperDim(prefs)
+    if (imageButtons(target, busy = downloading != null, onPicked = { forget() }, onRemoved = forget) == true) WallpaperDim(prefs)
 }
 
 /** Oscurecer el fondo (en tema claro, aclararlo): de nada a [MAX_WALLPAPER_DIM]; de fábrica, el velo de siempre. */
@@ -923,11 +962,26 @@ private fun writeMarker(marker: File, id: String) {
 }
 
 /** Cuál de los fondos de LiteDash está puesto: un archivo junto al fondo (elegir tu foto o quitarlo lo borra). */
-private fun wallpaperMarker(context: Context) = File(context.filesDir, OwnWallpaper.MARKER)
+private fun wallpaperMarker(context: Context, key: String? = null) =
+    if (key == null) File(context.filesDir, OwnWallpaper.MARKER) else File(File(context.filesDir, PAGES_DIR), "$key.id")
+
+/** La huella de «lo puso un Diseño» de la imagen propia de una página (la del fondo de todas la lleva [OwnWallpaper]). */
+private fun pagePlaced(context: Context, key: String) = File(File(context.filesDir, PAGES_DIR), "$key.design")
+
+/** La huella de un archivo de fondo: tamaño y hora de escritura. */
+private fun stamp(file: File) = "${file.length()}:${file.lastModified()}"
+
+/** ¿El fondo [key] de ahora es el que dejó un Diseño (nadie lo cambió después)? Solo en IO. */
+private fun placedByDesign(context: Context, key: String?): Boolean {
+    if (key == null) return OwnWallpaper.placedByDesign(context.filesDir)
+    val image = slot(key).file(context)
+    val placed = pagePlaced(context, key)
+    return image.exists() && placed.exists() && placed.readText().trim() == stamp(image)
+}
 
 /** El id del fondo de LiteDash que está puesto; null = tu foto o ninguno. Solo en IO. */
-internal fun liteDashWallpaper(context: Context): String? = try {
-    wallpaperMarker(context).takeIf { it.exists() }?.readText()?.trim()?.ifEmpty { null }
+internal fun liteDashWallpaper(context: Context, key: String? = null): String? = try {
+    wallpaperMarker(context, key).takeIf { it.exists() }?.readText()?.trim()?.ifEmpty { null }
 } catch (e: IOException) {
     Log.w(LOG_TAG, "No se pudo leer cuál fondo está puesto", e)
     null
@@ -939,17 +993,19 @@ internal fun liteDashWallpaper(context: Context): String? = try {
  * que no (otro lo cambió mientras esperaba su turno), no se baja nada. [byDesign] = lo pone un Diseño (se anota su
  * huella: [OwnWallpaper]). Desde el hilo principal.
  */
-internal suspend fun putLiteDashWallpaper(context: Context, id: String, byDesign: Boolean = false, still: () -> Boolean = { true }): WallpaperFetch =
+internal suspend fun putLiteDashWallpaper(context: Context, id: String, key: String? = null, byDesign: Boolean = false, still: () -> Boolean = { true }): WallpaperFetch =
     withContext(NonCancellable) {
-        WALLPAPER.lock.withLock {
+        val target = slot(key)
+        target.lock.withLock {
             if (!still()) return@withLock WallpaperFetch.SKIPPED
-            downloadWallpaper(context, id, WALLPAPER.file(context)).also { got ->
+            withContext(Dispatchers.IO) { target.file(context).parentFile?.mkdirs() }
+            downloadWallpaper(context, id, target.file(context)).also { got ->
                 if (got != WallpaperFetch.DONE) return@also
                 withContext(Dispatchers.IO) {
-                    writeMarker(wallpaperMarker(context), id)
-                    if (byDesign) placeSafely(context)
+                    writeMarker(wallpaperMarker(context, key), id)
+                    if (byDesign) placeSafely(context, key)
                 }
-                WALLPAPER.bump()
+                target.bump()
             }
         }
     }
@@ -960,37 +1016,22 @@ internal suspend fun putLiteDashWallpaper(context: Context, id: String, byDesign
  * tocan. Sin red y sin copia guardada se queda el que está (se reintenta en el siguiente cambio o al abrir).
  */
 @Composable
-internal fun ThemedDesignWallpaper() {
+internal fun ThemedDesignWallpaper(key: String?) {
     val dark = LocalColors.current.dark
     val context = LocalContext.current
-    LaunchedEffect(dark, WALLPAPER.version) {
+    LaunchedEffect(dark, key, slot(key).version) {
         val want = withContext(Dispatchers.IO) {
-            if (!OwnWallpaper.placedByDesign(context.filesDir)) return@withContext null
-            liteDashWallpaper(context)?.let { id -> themedWallpaper(id, dark)?.takeIf { it != id } }
+            if (!placedByDesign(context, key)) return@withContext null
+            liteDashWallpaper(context, key)?.let { id -> themedWallpaper(id, dark)?.takeIf { it != id } }
         } ?: return@LaunchedEffect
-        putLiteDashWallpaper(context, want, byDesign = true)
+        putLiteDashWallpaper(context, want, key, byDesign = true)
     }
 }
 
 /**
- * Antes de que un Diseño cambie el fondo: tu foto se guarda aparte ([OwnWallpaper.keep]). false si no se pudo copiar:
- * entonces no se debe cambiar el fondo (se perdería). Desde el hilo principal.
+ * Regresa tu fondo de antes de los Diseños, si el de ahora sigue siendo de un Diseño: solo para deshacer uno aplicado
+ * con una versión de antes del fondo por página (entonces el Diseño cambiaba el fondo de todas). Desde el hilo principal.
  */
-internal suspend fun keepOwnWallpaper(context: Context): Boolean = withContext(NonCancellable) {
-    WALLPAPER.lock.withLock {
-        withContext(Dispatchers.IO) {
-            try {
-                OwnWallpaper.keep(context.filesDir)
-                true
-            } catch (e: IOException) {
-                Log.w(LOG_TAG, "No se pudo guardar tu fondo para deshacer", e)
-                false
-            }
-        }
-    }
-}
-
-/** Regresa tu fondo de antes de los Diseños, si el de ahora sigue siendo de un Diseño. Desde el hilo principal. */
 internal suspend fun restoreOwnWallpaper(context: Context) = withContext(NonCancellable) {
     WALLPAPER.lock.withLock {
         val changed = withContext(Dispatchers.IO) {
@@ -1005,32 +1046,19 @@ internal suspend fun restoreOwnWallpaper(context: Context) = withContext(NonCanc
     }
 }
 
-/**
- * Sin fondo de imagen (queda el resplandor del tema): lo que pone un Diseño mientras su fondo espera internet. Solo
- * después de [keepOwnWallpaper] (si no, se perdería tu foto). Desde el hilo principal.
- */
-internal suspend fun clearWallpaper(context: Context) = withContext(NonCancellable) {
-    WALLPAPER.lock.withLock {
-        withContext(Dispatchers.IO) {
-            WALLPAPER.file(context).delete()
-            wallpaperMarker(context).delete()
-            placeSafely(context)
-        }
-        WALLPAPER.bump()
-    }
-}
-
 /** La foto de un Diseño tuyo ([MyDesign]): una copia del fondo del inicio de cuando lo guardaste. */
 private fun designImage(context: Context, id: String) = File(File(context.filesDir, "designs"), "$id.img")
 
 /**
- * Al guardar un Diseño tuyo: copia el fondo de ahora como su foto. true = quedó; false = no hay imagen de fondo (el
- * Diseño va sin foto); null = no se pudo copiar (entonces no se guarda el Diseño). Desde el hilo principal.
+ * Al guardar un Diseño tuyo: copia como su foto el fondo que se ve (el propio de la página, [key], o el de todas). true =
+ * quedó; false = no hay imagen de fondo (el Diseño va sin foto); null = no se pudo copiar (entonces no se guarda el
+ * Diseño). Desde el hilo principal.
  */
-internal suspend fun keepDesignImage(context: Context, id: String): Boolean? = withContext(NonCancellable) {
-    WALLPAPER.lock.withLock {
+internal suspend fun keepDesignImage(context: Context, id: String, key: String?): Boolean? = withContext(NonCancellable) {
+    val source = slot(key)
+    source.lock.withLock {
         withContext(Dispatchers.IO) {
-            val current = WALLPAPER.file(context)
+            val current = source.file(context)
             if (!current.exists()) return@withContext false
             try {
                 val target = designImage(context, id)
@@ -1046,27 +1074,44 @@ internal suspend fun keepDesignImage(context: Context, id: String): Boolean? = w
 }
 
 /**
- * Pone de fondo la foto del Diseño tuyo [id] (null o sin archivo = sin imagen: el resplandor del tema), con la huella
- * de «lo puso un Diseño» (así «Deshacer» regresa el de antes). Sin marca de fondo de LiteDash: no se cambia solo por su
- * pareja al cambiar el tema (es tu Diseño tal como lo guardaste). Solo después de [keepOwnWallpaper]; [still] se revisa
- * ya con el candado. Desde el hilo principal.
+ * Llena la imagen propia [key] de una página con una copia de [source] (sin archivo = sin imagen: el resplandor del
+ * tema), sin marca de fondo de LiteDash ni huella de Diseño: así no se cambia sola por su pareja al cambiar el tema.
+ * Desde el hilo principal.
  */
-internal suspend fun putDesignImage(context: Context, id: String?, still: () -> Boolean) = withContext(NonCancellable) {
-    WALLPAPER.lock.withLock {
-        if (!still()) return@withLock
+private suspend fun fillPageImage(context: Context, key: String, source: File?) = withContext(NonCancellable) {
+    val target = slot(key)
+    target.lock.withLock {
         withContext(Dispatchers.IO) {
-            val source = id?.let { designImage(context, it) }?.takeIf { it.exists() }
             try {
-                if (source != null) replaceFile(WALLPAPER.file(context)) { source.copyTo(it, overwrite = true) }
-                else WALLPAPER.file(context).delete()
-                wallpaperMarker(context).delete()
-                placeSafely(context)
+                val file = target.file(context)
+                file.parentFile?.mkdirs()
+                if (source != null && source.exists()) replaceFile(file) { source.copyTo(it, overwrite = true) } else file.delete()
+                wallpaperMarker(context, key).delete()
+                pagePlaced(context, key).delete()
             } catch (e: IOException) {
-                Log.w(LOG_TAG, "No se pudo poner la foto del Diseño $id", e)
+                Log.w(LOG_TAG, "No se pudo copiar el fondo a la página ($key)", e)
             }
         }
-        WALLPAPER.bump()
+        target.bump()
     }
+}
+
+/** La imagen propia [key] de una página = la foto del Diseño tuyo [id] (null = sin imagen). Desde el hilo principal. */
+internal suspend fun putDesignImage(context: Context, key: String, id: String?) = fillPageImage(context, key, id?.let { designImage(context, it) })
+
+/** La imagen propia [key] de una página empieza como copia del fondo de todas (al prender «Fondo propio»), con su marca. */
+internal suspend fun startPageImage(context: Context, key: String) {
+    fillPageImage(context, key, WALLPAPER.file(context))
+    withContext(Dispatchers.IO) { liteDashWallpaper(context)?.let { writeMarker(wallpaperMarker(context, key), it) } }
+    slot(key).bump()
+}
+
+/**
+ * Borra las imágenes propias de páginas que ya nadie usa (se quitó la página, se apagó su fondo propio o se aplicó otro
+ * Diseño): todo lo de files/pages/ cuya llave no está en [used]. Al abrir LiteDash, una vez.
+ */
+internal suspend fun dropUnusedPageImages(context: Context, used: Set<String>) = withContext(Dispatchers.IO) {
+    File(context.filesDir, PAGES_DIR).listFiles()?.forEach { if (it.name.substringBeforeLast('.') !in used) it.delete() }
 }
 
 /** Borra la foto del Diseño tuyo [id] (al eliminarlo). */
@@ -1080,10 +1125,10 @@ internal suspend fun designThumb(context: Context, id: String): ImageBitmap? = w
 
 private const val DESIGN_THUMB_PX = 480
 
-/** Anota que el fondo de ahora lo puso un Diseño (si no se puede, al deshacer solo no se regresa tu foto). Solo en IO. */
-private fun placeSafely(context: Context) {
+/** Anota que el fondo [key] de ahora lo puso un Diseño (si no se puede, solo no sigue al tema). Solo en IO. */
+private fun placeSafely(context: Context, key: String?) {
     try {
-        OwnWallpaper.placed(context.filesDir)
+        if (key == null) OwnWallpaper.placed(context.filesDir) else pagePlaced(context, key).writeText(stamp(slot(key).file(context)))
     } catch (e: IOException) {
         Log.w(LOG_TAG, "No se pudo anotar el fondo del Diseño", e)
     }

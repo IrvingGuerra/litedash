@@ -69,6 +69,13 @@ class DashboardStore(context: Context) {
         prefs.edit().putString(BACKGROUND_PREFIX + page, b.stored).apply()
     }
 
+    /** La imagen propia de [page] (la llave con que la app guarda su archivo); null = la de todas las páginas. */
+    fun image(page: Int): String? = prefs.getString(IMAGE_PREFIX + page, null)
+
+    fun setImage(page: Int, key: String?) {
+        prefs.edit().apply { if (key == null) remove(IMAGE_PREFIX + page) else putString(IMAGE_PREFIX + page, key) }.apply()
+    }
+
     /**
      * La plantilla (o el acomodo de un Diseño) que se puso en [page]: con ella se arma esa página en las cuadrículas que
      * aún no tienen acomodo guardado (otra escala u orientación). null = ninguna (la página de siempre).
@@ -135,6 +142,7 @@ internal fun withoutPage(all: Map<String, *>, page: Int, count: Int): Map<String
         for (key in all.keys) if (key.startsWith(layoutPrefix(p)) || key.startsWith(savedAtPrefix(p))) out[key] = null
         out[BACKGROUND_PREFIX + p] = null
         out[TEMPLATE_PREFIX + p] = null
+        if (IMAGE_PREFIX + p in all) out[IMAGE_PREFIX + p] = null
     }
     for (p in page until count - 1) {
         for ((key, value) in all) {
@@ -147,6 +155,7 @@ internal fun withoutPage(all: Map<String, *>, page: Int, count: Int): Map<String
         }
         (all[BACKGROUND_PREFIX + (p + 1)] as? String)?.let { out[BACKGROUND_PREFIX + p] = it }
         (all[TEMPLATE_PREFIX + (p + 1)] as? String)?.let { out[TEMPLATE_PREFIX + p] = it }
+        (all[IMAGE_PREFIX + (p + 1)] as? String)?.let { out[IMAGE_PREFIX + p] = it }
     }
     return out
 }
@@ -239,6 +248,8 @@ private const val PAGE_SAVED_AT_PREFIX = "page_saved_at_"
 private const val BACKGROUND_PREFIX = "page_background_"
 /** La plantilla puesta en cada página ([Template.name]). */
 private const val TEMPLATE_PREFIX = "page_template_"
+/** La imagen de fondo propia de cada página (su llave; sin ella, la de todas). */
+private const val IMAGE_PREFIX = "page_image_"
 
 /** Hasta cuántas páginas puede tener el inicio. */
 const val MAX_PAGES = 5

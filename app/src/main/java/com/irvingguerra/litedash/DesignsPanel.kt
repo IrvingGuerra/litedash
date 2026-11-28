@@ -351,6 +351,20 @@ internal fun DesignAppliedNotice(d: Dependencies) {
     }
 }
 
+/**
+ * Al abrir LiteDash, una vez: se borran las imágenes propias de páginas que ya nadie usa. Se quedan las de las páginas,
+ * la de «Deshacer» (la que tenía la página antes del último Diseño) y la que espera internet.
+ */
+@Composable
+internal fun UnusedPageImages(d: Dependencies) {
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        val used = d.dashboard.images.filterNotNull() +
+            listOfNotNull(DesignUndo.decode(d.prefs.designUndo)?.page?.image, PendingWallpaper.decode(d.prefs.designWallpaper)?.key)
+        dropUnusedPageImages(context, used.toSet())
+    }
+}
+
 /** Uno a la vez baja el fondo que esperaba internet (al abrir Diseños y al volver la red no se pisan). */
 private val retryLock = Mutex()
 
@@ -364,12 +378,13 @@ private var retried: Pair<String, Int>? = null
  * fondo u otro Diseño, no se baja.
  */
 private suspend fun retryDesignWallpaper(context: Context, prefs: Preferences) = retryLock.withLock {
-    val id = prefs.designWallpaper ?: return@withLock
-    val tries = retried?.takeIf { it.first == id }?.second ?: 0
+    val text = prefs.designWallpaper
+    val pending = PendingWallpaper.decode(text) ?: return@withLock
+    val tries = retried?.takeIf { it.first == text }?.second ?: 0
     if (tries >= RETRY_MAX) return@withLock
-    retried = id to tries + 1
-    val got = putLiteDashWallpaper(context, id, byDesign = true) { prefs.designWallpaper == id }
-    if ((got == WallpaperFetch.DONE || got == WallpaperFetch.GONE) && prefs.designWallpaper == id) prefs.designWallpaper = null
+    retried = text.orEmpty() to tries + 1
+    val got = putLiteDashWallpaper(context, pending.id, pending.key, byDesign = true) { prefs.designWallpaper == text }
+    if ((got == WallpaperFetch.DONE || got == WallpaperFetch.GONE) && prefs.designWallpaper == text) prefs.designWallpaper = null
 }
 
 /**

@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +40,7 @@ import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
+import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Segmented
@@ -208,8 +210,8 @@ internal fun mapFocus(pages: DashboardState, board: Rect?, root: Size): Rect? {
 }
 
 /**
- * El fondo de la página [page] (de fábrica, la que se ve; Ajustes → Inicio usa la primera): tu imagen (la de siempre, la
- * misma para las páginas que la usan) o el mapa (cómo te ves en él y el permiso de ubicación si falta).
+ * El fondo de la página [page] (de fábrica, la que se ve; Ajustes → Inicio usa la primera): una imagen (la de todas las
+ * páginas o, con «Fondo propio de esta página», la suya) o el mapa (cómo te ves en él y el permiso de ubicación si falta).
  */
 @Composable
 internal fun PageBackgroundSettings(d: Dependencies, page: Int = d.dashboard.page) {
@@ -226,7 +228,20 @@ internal fun PageBackgroundSettings(d: Dependencies, page: Int = d.dashboard.pag
         when (background) {
             PageBackground.WALLPAPER -> {
                 Label(stringResource(R.string.wallpaper_help), Typography.body, c.textMuted)
-                WallpaperSettings(d.prefs)
+                // Con fondo propio, lo que se elija abajo es solo de esta página (empieza como copia del de todas); sin
+                // él, es el de todas las páginas que no tienen el suyo.
+                val own = pages.images.getOrNull(page)
+                val context = LocalContext.current
+                val scope = rememberCoroutineScope()
+                SwitchRow(stringResource(R.string.page_wallpaper_own), own != null, { on ->
+                    if (!on) pages.setImage(page, null)
+                    else scope.launch {
+                        val key = newPageKey()
+                        startPageImage(context, key)
+                        pages.setImage(page, key)
+                    }
+                }, stringResource(R.string.page_wallpaper_own_help))
+                WallpaperSettings(d.prefs, own)
             }
             PageBackground.MAP -> {
                 Label(stringResource(R.string.map_backdrop_help), Typography.body, c.textMuted)
