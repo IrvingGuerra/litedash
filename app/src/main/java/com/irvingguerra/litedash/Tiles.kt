@@ -276,6 +276,9 @@ private const val CLOCK_DATE_HEIGHT = 22f
 private const val CLOCK_PILL_HEIGHT = 44f
 private const val CLOCK_LINE = 1.2f
 
+/** Desde este alto útil, el acceso directo va centrado con el ícono grande. */
+private val ROOMY_SHORTCUT = 180.dp
+
 /**
  * Tarjeta de acceso grande (Teléfono, Android Auto y los widgets sin permiso o sin datos): ícono blanco en
  * un círculo de [tint], título y detalle. [image] pone otra cosa en lugar del círculo (el ícono real de
@@ -297,7 +300,10 @@ fun ShortcutTile(
             val large = maxHeight > 120.dp
             val small = isSmallScreen()
             val width = maxWidth
-            val side = if (large) 64.dp else if (small) 52.dp else 44.dp
+            // Con lugar de sobra, el ícono crece con el widget y va al centro con su nombre (arriba el ícono y abajo
+            // el nombre dejaban la tarjeta casi vacía).
+            val roomy = maxHeight >= ROOMY_SHORTCUT
+            val side = if (roomy) (minOf(maxWidth, maxHeight) * 0.36f).coerceIn(64.dp, 132.dp) else if (large) 64.dp else if (small) 52.dp else 44.dp
             val content = @Composable {
                 if (image != null) image(side)
                 else Box(Modifier.size(side).clip(CircleShape).background(tint), contentAlignment = Alignment.Center) {
@@ -312,7 +318,19 @@ fun ShortcutTile(
                 }
             }
             val arrow = @Composable { if (chevron) Icon(Icons.chevron, c.textMuted.copy(alpha = 0.6f), 20.dp) }
-            if (large) {
+            if (roomy) {
+                Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                    content()
+                    Spacer(Modifier.height(14.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f, fill = false), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Label(title, Typography.subtitle.copy(textAlign = TextAlign.Center), maxLines = 1)
+                            if (detail != null) Label(detail, Typography.small.copy(textAlign = TextAlign.Center), c.textMuted, maxLines = 2)
+                        }
+                        arrow()
+                    }
+                }
+            } else if (large) {
                 Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
                     content()
                     Row(verticalAlignment = Alignment.CenterVertically) {
