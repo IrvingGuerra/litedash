@@ -132,7 +132,7 @@ internal fun smokeAlpha(c: Colors): Float {
 private var smoke: Pair<Colors, Float>? = null
 
 /** La escarcha del cristal: un blanco muy leve que lo despega del fondo (se va conforme la tarjeta se llena). */
-internal fun frost(dark: Boolean) = if (dark) 0.04f else 0.12f
+internal fun frost(dark: Boolean) = if (dark) 0.04f else 0.07f
 
 /**
  * El velo que lleva tu fondo detrás de un cristal para que el texto se lea: el de siempre ([base]) y, si tu imagen es
@@ -198,7 +198,7 @@ fun Modifier.skinSurface(look: CardLook, c: Colors, shape: Shape, floor: Float =
     var m = this
     val glass = look.style == CardStyle.GLASS
     if (!glass) return m.background(c.surface)
-    if (look.backdrop != null) m = m.blurredBackdrop(look.backdrop, shape)
+    if (look.backdrop != null) m = m.blurredBackdrop(look.backdrop, shape, c.dark)
     val fill = glassFill(look, floor)
     // Sobre el mapa de fondo, el mismo cristal pero ahumado con el color del fondo, que se vuelve el de la tarjeta
     // conforme se llena.
@@ -237,7 +237,7 @@ private fun Modifier.liquidGlass(dark: Boolean, shape: Shape, through: Float, li
     // En tres trazos que se van cerrando hacia la orilla: sumados dan un degradado sin escalón a la vista.
     val glowWidth = GLASS_GLOW.toPx().coerceAtMost(radius.coerceAtLeast(GLASS_RIM.toPx() * 3))
     val glow = (1..GLOW_STEPS).flatMap { step ->
-        rimStrokes(size, radius, glowWidth * step / GLOW_STEPS, GLASS_RIM.toPx()) { nx, ny -> white((if (dark) 0.2f else 0.4f) / GLOW_STEPS * litSide(nx, ny)) }
+        rimStrokes(size, radius, glowWidth * step / GLOW_STEPS, GLASS_RIM.toPx()) { nx, ny -> white((if (dark) 0.2f else 0.22f) / GLOW_STEPS * litSide(nx, ny)) }
     }
     onDrawBehind {
         drawRect(wash)
@@ -333,7 +333,7 @@ fun Modifier.glassShadow(look: CardLook, dark: Boolean, radius: Dp, cheap: Boole
         val drop = SHADOW_DROP.toPx()
         // Nace metida bajo la tarjeta: arriba y a los lados casi no asoma, cae hacia abajo.
         val inset = SHADOW_INSET.toPx()
-        val strength = (if (dark) 0.14f else 0.03f) * (if (cheap) 0.6f else 1f)
+        val strength = (if (dark) 0.14f else 0.075f) * (if (cheap) 0.6f else 1f)
         val stroke = Stroke(ring + 1f)
         val shapes = List(rings) { i ->
             val out = ring * (i + 0.5f) - inset
@@ -343,7 +343,7 @@ fun Modifier.glassShadow(look: CardLook, dark: Boolean, radius: Dp, cheap: Boole
         // El contorno oscuro que separa el cristal de un fondo claro (como el vidrio de iOS): por fuera, fino, más
         // marcado a los lados que arriba y abajo (ahí ya van la luz y la sombra).
         val edge = GLASS_EDGE.toPx()
-        val edgeAlpha = if (dark) 0.5f else 0.3f
+        val edgeAlpha = if (dark) 0.5f else 0.2f
         val edgeBrush = Brush.verticalGradient(
             0f to Color.Black.copy(alpha = edgeAlpha * 0.42f), 0.12f to Color.Black.copy(alpha = edgeAlpha),
             0.88f to Color.Black.copy(alpha = edgeAlpha), 1f to Color.Black.copy(alpha = edgeAlpha * 0.42f),
@@ -372,7 +372,7 @@ private const val LOW_MEMORY_MB = 128
  * calcula fuera del hilo principal cuando la tarjeta deja de moverse y, mientras, va la de antes o el fondo sin doblar.
  * En equipos de poca memoria, sin doblar.
  */
-fun Modifier.blurredBackdrop(b: CardBackdrop, lens: Shape? = null): Modifier = composed {
+fun Modifier.blurredBackdrop(b: CardBackdrop, lens: Shape? = null, dark: Boolean = true): Modifier = composed {
     // Dónde está la tarjeta y cuánto mide la ventana: se leen al dibujar (moverla solo la redibuja).
     var at by remember { mutableStateOf(Offset.Zero) }
     var root by remember { mutableStateOf(Size.Zero) }
@@ -381,7 +381,7 @@ fun Modifier.blurredBackdrop(b: CardBackdrop, lens: Shape? = null): Modifier = c
     val context = LocalContext.current
     val density = LocalDensity.current
     val direction = LocalLayoutDirection.current
-    if (lens != null && !lowMemoryDevice(context)) LaunchedEffect(b.image, lens) {
+    if (lens != null && !lowMemoryDevice(context)) LaunchedEffect(b.image, lens, dark) {
         snapshotFlow { Triple(at, root, extent) }.collectLatest { (where, window, size) ->
             if (window.width <= 0f || size.width < 1f || size.height < 1f) return@collectLatest
             val radius = when (val o = lens.createOutline(size, direction, density)) {
@@ -391,7 +391,7 @@ fun Modifier.blurredBackdrop(b: CardBackdrop, lens: Shape? = null): Modifier = c
             }
             delay(LENS_SETTLE_MS)
             val (depth, push, inner) = with(density) { Triple(LENS_DEPTH.toPx(), LENS_PUSH.toPx(), INNER_SHADOW.toPx()) }
-            val image = withContext(Dispatchers.Default) { refracted(b, where, window, size, radius, depth, push, inner) }
+            val image = withContext(Dispatchers.Default) { refracted(b, where, window, size, radius, depth, push, inner, if (dark) INNER_SHADOW_ALPHA else INNER_SHADOW_LIGHT) }
             bent = Bent(image, size)
         }
     }
@@ -425,10 +425,10 @@ private class Bent(val image: ImageBitmap, val size: Size)
  * cada punto toma el fondo de más adentro, hasta [push], con la compresión pegada al borde de un vidrio de verdad
  * ([LENS_PROFILE]); y lo toma de la copia NÍTIDA ([CardBackdrop.sharp]): un fondo ya desenfocado doblado no se nota, uno
  * con detalle sí. Cada color se dobla un poco distinto ([LENS_DISPERSION]: el filo prismático). Encima, la sombra
- * interior ([inner] de ancho) que despega la orilla, y un grano mínimo contra las bandas. Correr fuera del hilo
+ * interior ([inner] de ancho, [innerAlpha] de fuerza) que despega la orilla, y un grano mínimo contra las bandas. Correr fuera del hilo
  * principal. (Perfil y dispersión: Kyant0/AndroidLiquidGlass, Apache-2.0, y styropyr0/Prismal, MIT.)
  */
-internal fun refracted(b: CardBackdrop, at: Offset, root: Size, size: Size, radius: Float, depth: Float, push: Float, inner: Float): ImageBitmap {
+internal fun refracted(b: CardBackdrop, at: Offset, root: Size, size: Size, radius: Float, depth: Float, push: Float, inner: Float, innerAlpha: Float): ImageBitmap {
     val iw = b.image.width
     val ih = b.image.height
     val src = b.pixels
@@ -488,7 +488,7 @@ internal fun refracted(b: CardBackdrop, at: Offset, root: Size, size: Size, radi
             }
             if (inside < shade) {
                 val t = 1f - (inside / shade).coerceIn(0f, 1f)
-                color = mix(color, 0xFF000000.toInt(), INNER_SHADOW_ALPHA * t * t)
+                color = mix(color, 0xFF000000.toInt(), innerAlpha * t * t)
             }
             out[y * w + x] = grained(color, x, y)
         }
@@ -703,6 +703,8 @@ private const val LENS_SETTLE_MS = 90L
 /** La sombra interior de la orilla: qué tan adentro llega y qué tan oscura es justo en el borde. */
 private val INNER_SHADOW = 9.dp
 private const val INNER_SHADOW_ALPHA = 0.16f
+/** En tema claro, mucho menos: sobre blanco una orilla oscura se ve sucia (Irving, Nube, 2026-11-27). */
+private const val INNER_SHADOW_LIGHT = 0.05f
 /** El grano del fondo doblado, en niveles de 0–255 hacia cada lado. */
 private const val GRAIN = 3
 /** El brillo fino de la orilla del cristal, el resplandor del lado de la luz y el contorno oscuro de afuera. */
