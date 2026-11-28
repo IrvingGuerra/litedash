@@ -175,6 +175,8 @@
     <string name="design_save">Lưu</string>
     <string name="design_delete_title">Xóa phong cách %1$s?</string>
     <string name="design_delete_message">Phong cách này sẽ bị gỡ khỏi danh sách của bạn. Màn hình chính hiện tại không thay đổi.</string>
+    <string name="page_wallpaper_own">Hình nền riêng cho trang này</string>
+    <string name="page_wallpaper_own_help">Khi tắt, trang này dùng hình nền chung của mọi trang.</string>
     <string name="add">Thêm</string>
     <string name="add_tile">Thêm vào màn hình chính</string>
     <string name="add_group_car">Xe của bạn</string>

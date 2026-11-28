@@ -175,6 +175,8 @@
     <string name="design_save">Αποθήκευση</string>
     <string name="design_delete_title">Διαγραφή του στυλ %1$s;</string>
     <string name="design_delete_message">Αφαιρείται από τα στυλ σας. Η τρέχουσα αρχική οθόνη σας δεν αλλάζει.</string>
+    <string name="page_wallpaper_own">Δική της ταπετσαρία για αυτή τη σελίδα</string>
+    <string name="page_wallpaper_own_help">Όταν είναι ανενεργό, η σελίδα χρησιμοποιεί την ταπετσαρία όλων των σελίδων.</string>
     <string name="add">Προσθήκη</string>
     <string name="add_tile">Προσθήκη στην αρχική</string>
     <string name="add_group_car">Το αυτοκίνητό σας</string>

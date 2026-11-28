@@ -175,6 +175,8 @@
     <string name="design_save">Kaydet</string>
     <string name="design_delete_title">%1$s tasarımı silinsin mi?</string>
     <string name="design_delete_message">Tasarımlarınızdan kaldırılır. Şu anki ana ekranınız değişmez.</string>
+    <string name="page_wallpaper_own">Bu sayfaya özel duvar kağıdı</string>
+    <string name="page_wallpaper_own_help">Kapalıyken bu sayfa tüm sayfaların duvar kağıdını kullanır.</string>
     <string name="add">Ekle</string>
     <string name="add_tile">Ana ekrana ekle</string>
     <string name="add_group_car">Arabanız</string>

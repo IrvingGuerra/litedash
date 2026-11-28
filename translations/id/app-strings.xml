@@ -175,6 +175,8 @@
     <string name="design_save">Simpan</string>
     <string name="design_delete_title">Hapus desain %1$s?</string>
     <string name="design_delete_message">Desain ini dihapus dari daftar desain Anda. Layar beranda Anda saat ini tidak berubah.</string>
+    <string name="page_wallpaper_own">Wallpaper sendiri untuk halaman ini</string>
+    <string name="page_wallpaper_own_help">Jika nonaktif, halaman ini memakai wallpaper semua halaman.</string>
     <string name="add">Tambah</string>
     <string name="add_tile">Tambah ke beranda</string>
     <string name="add_group_car">Mobil Anda</string>

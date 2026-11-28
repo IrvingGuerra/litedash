@@ -175,6 +175,8 @@
     <string name="design_save">保存</string>
     <string name="design_delete_title">デザイン「%1$s」を削除しますか？</string>
     <string name="design_delete_message">デザインの一覧から削除されます。今のホーム画面は変わりません。</string>
+    <string name="page_wallpaper_own">このページ専用の壁紙</string>
+    <string name="page_wallpaper_own_help">オフのときは、すべてのページ共通の壁紙を使います。</string>
     <string name="add">追加</string>
     <string name="add_tile">ホームに追加</string>
     <string name="add_group_car">あなたの車</string>

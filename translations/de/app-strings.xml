@@ -175,6 +175,8 @@
     <string name="design_save">Speichern</string>
     <string name="design_delete_title">Stil %1$s löschen?</string>
     <string name="design_delete_message">Er verschwindet aus deinen Stilen. Dein aktueller Startbildschirm bleibt, wie er ist.</string>
+    <string name="page_wallpaper_own">Eigener Hintergrund dieser Seite</string>
+    <string name="page_wallpaper_own_help">Wenn aus, nutzt diese Seite den Hintergrund aller Seiten.</string>
     <string name="add">Hinzufügen</string>
     <string name="add_tile">Zum Start hinzufügen</string>
     <string name="add_group_car">Dein Auto</string>

@@ -175,6 +175,8 @@
     <string name="design_save">Spara</string>
     <string name="design_delete_title">Ta bort stilen %1$s?</string>
     <string name="design_delete_message">Den tas bort från dina stilar. Din nuvarande startskärm ändras inte.</string>
+    <string name="page_wallpaper_own">Egen bakgrund för den här sidan</string>
+    <string name="page_wallpaper_own_help">När det är av använder sidan bakgrunden för alla sidor.</string>
     <string name="add">Lägg till</string>
     <string name="add_tile">Lägg till på start</string>
     <string name="add_group_car">Din bil</string>

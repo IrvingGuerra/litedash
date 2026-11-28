@@ -175,6 +175,8 @@
     <string name="design_save">Сохранить</string>
     <string name="design_delete_title">Удалить стиль %1$s?</string>
     <string name="design_delete_message">Он исчезнет из твоих стилей. Текущий главный экран не изменится.</string>
+    <string name="page_wallpaper_own">Свои обои для этой страницы</string>
+    <string name="page_wallpaper_own_help">Если выключено, страница использует обои всех страниц.</string>
     <string name="add">Добавить</string>
     <string name="add_tile">Добавить на главный экран</string>
     <string name="add_group_car">Твоя машина</string>

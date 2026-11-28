@@ -175,6 +175,8 @@
     <string name="design_save">सेव करें</string>
     <string name="design_delete_title">%1$s डिज़ाइन मिटाएँ?</string>
     <string name="design_delete_message">यह आपके डिज़ाइनों से हट जाता है। आपकी मौजूदा होम स्क्रीन नहीं बदलती।</string>
+    <string name="page_wallpaper_own">इस पेज का अपना वॉलपेपर</string>
+    <string name="page_wallpaper_own_help">बंद होने पर यह पेज सभी पेजों वाला वॉलपेपर इस्तेमाल करता है।</string>
     <string name="add">जोड़ें</string>
     <string name="add_tile">होम पर जोड़ें</string>
     <string name="add_group_car">आपकी कार</string>

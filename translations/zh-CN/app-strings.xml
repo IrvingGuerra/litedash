@@ -175,6 +175,8 @@
     <string name="design_save">保存</string>
     <string name="design_delete_title">删除“%1$s”风格？</string>
     <string name="design_delete_message">它会从你的风格中移除。当前主屏幕不会改变。</string>
+    <string name="page_wallpaper_own">此页面专属壁纸</string>
+    <string name="page_wallpaper_own_help">关闭时，此页面使用所有页面共用的壁纸。</string>
     <string name="add">添加</string>
     <string name="add_tile">添加到主屏幕</string>
     <string name="add_group_car">你的车</string>

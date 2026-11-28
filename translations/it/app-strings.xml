@@ -175,6 +175,8 @@
     <string name="design_save">Salva</string>
     <string name="design_delete_title">Eliminare lo stile %1$s?</string>
     <string name="design_delete_message">Viene tolto dai tuoi stili. La tua Home attuale non cambia.</string>
+    <string name="page_wallpaper_own">Sfondo proprio di questa pagina</string>
+    <string name="page_wallpaper_own_help">Se disattivato, questa pagina usa lo sfondo di tutte le pagine.</string>
     <string name="add">Aggiungi</string>
     <string name="add_tile">Aggiungi alla Home</string>
     <string name="add_group_car">La tua auto</string>

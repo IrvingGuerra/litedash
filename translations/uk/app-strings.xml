@@ -175,6 +175,8 @@
     <string name="design_save">Зберегти</string>
     <string name="design_delete_title">Видалити стиль %1$s?</string>
     <string name="design_delete_message">Він зникне з твоїх стилів. Поточний головний екран не зміниться.</string>
+    <string name="page_wallpaper_own">Власні шпалери цієї сторінки</string>
+    <string name="page_wallpaper_own_help">Якщо вимкнено, сторінка використовує шпалери всіх сторінок.</string>
     <string name="add">Додати</string>
     <string name="add_tile">Додати на головний екран</string>
     <string name="add_group_car">Твоє авто</string>

@@ -175,6 +175,8 @@
     <string name="design_save">Mentés</string>
     <string name="design_delete_title">Törlöd a(z) %1$s stílust?</string>
     <string name="design_delete_message">Kikerül a stílusaid közül. A jelenlegi kezdőképernyőd nem változik.</string>
+    <string name="page_wallpaper_own">Saját háttérkép ennek az oldalnak</string>
+    <string name="page_wallpaper_own_help">Kikapcsolva ez az oldal az összes oldal háttérképét használja.</string>
     <string name="add">Hozzáadás</string>
     <string name="add_tile">Hozzáadás a kezdőképernyőhöz</string>
     <string name="add_group_car">Az autód</string>

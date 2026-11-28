@@ -177,6 +177,8 @@
     <string name="design_save">Enregistrer</string>
     <string name="design_delete_title">Supprimer le style %1$s ?</string>
     <string name="design_delete_message">Il est retiré de vos styles. Votre écran d\'accueil actuel ne change pas.</string>
+    <string name="page_wallpaper_own">Fond d\'écran propre à cette page</string>
+    <string name="page_wallpaper_own_help">Désactivé, cette page utilise le fond d\'écran de toutes les pages.</string>
     <string name="add">Ajouter</string>
     <string name="add_tile">Ajouter à l\'accueil</string>
     <string name="add_group_car">Votre voiture</string>

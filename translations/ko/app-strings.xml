@@ -175,6 +175,8 @@
     <string name="design_save">저장</string>
     <string name="design_delete_title">%1$s 디자인을 삭제할까요?</string>
     <string name="design_delete_message">디자인 목록에서 삭제돼요. 지금 홈 화면은 바뀌지 않아요.</string>
+    <string name="page_wallpaper_own">이 페이지만의 배경화면</string>
+    <string name="page_wallpaper_own_help">끄면 이 페이지도 모든 페이지의 배경화면을 사용해요.</string>
     <string name="add">추가</string>
     <string name="add_tile">홈에 추가</string>
     <string name="add_group_car">내 차</string>

@@ -175,6 +175,8 @@
     <string name="design_save">Uložit</string>
     <string name="design_delete_title">Smazat styl %1$s?</string>
     <string name="design_delete_message">Zmizí z tvých stylů. Tvoje současná plocha se nezmění.</string>
+    <string name="page_wallpaper_own">Vlastní tapeta této stránky</string>
+    <string name="page_wallpaper_own_help">Když je vypnuto, stránka používá tapetu všech stránek.</string>
     <string name="add">Přidat</string>
     <string name="add_tile">Přidat na plochu</string>
     <string name="add_group_car">Tvoje auto</string>

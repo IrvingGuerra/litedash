@@ -175,6 +175,8 @@
     <string name="design_save">Opslaan</string>
     <string name="design_delete_title">Stijl %1$s verwijderen?</string>
     <string name="design_delete_message">Hij verdwijnt uit je stijlen. Je huidige startscherm verandert niet.</string>
+    <string name="page_wallpaper_own">Eigen achtergrond voor deze pagina</string>
+    <string name="page_wallpaper_own_help">Uit: deze pagina gebruikt de achtergrond van alle pagina\'s.</string>
     <string name="add">Toevoegen</string>
     <string name="add_tile">Aan startscherm toevoegen</string>
     <string name="add_group_car">Je auto</string>

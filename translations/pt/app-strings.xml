@@ -177,6 +177,8 @@
     <string name="design_save">Salvar</string>
     <string name="design_delete_title">Excluir o estilo %1$s?</string>
     <string name="design_delete_message">Ele sai dos seus estilos. Sua tela inicial atual não muda.</string>
+    <string name="page_wallpaper_own">Fundo próprio desta página</string>
+    <string name="page_wallpaper_own_help">Desligado, esta página usa o fundo de todas as páginas.</string>
     <string name="add">Adicionar</string>
     <string name="add_tile">Adicionar à tela inicial</string>
     <string name="add_group_car">Seu carro</string>

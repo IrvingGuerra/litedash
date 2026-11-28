@@ -175,6 +175,8 @@
     <string name="design_save">บันทึก</string>
     <string name="design_delete_title">ลบดีไซน์ %1$s ไหม</string>
     <string name="design_delete_message">จะถูกนำออกจากดีไซน์ของคุณ หน้าจอหลักตอนนี้จะไม่เปลี่ยน</string>
+    <string name="page_wallpaper_own">วอลเปเปอร์ของหน้านี้เอง</string>
+    <string name="page_wallpaper_own_help">เมื่อปิด หน้านี้จะใช้วอลเปเปอร์เดียวกับทุกหน้า</string>
     <string name="add">เพิ่ม</string>
     <string name="add_tile">เพิ่มลงหน้าหลัก</string>
     <string name="add_group_car">รถของคุณ</string>

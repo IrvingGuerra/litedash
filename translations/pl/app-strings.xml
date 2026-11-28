@@ -175,6 +175,8 @@
     <string name="design_save">Zapisz</string>
     <string name="design_delete_title">Usunąć styl %1$s?</string>
     <string name="design_delete_message">Zniknie z Twoich stylów. Twój obecny ekran główny się nie zmieni.</string>
+    <string name="page_wallpaper_own">Własna tapeta tej strony</string>
+    <string name="page_wallpaper_own_help">Gdy wyłączone, ta strona używa tapety wszystkich stron.</string>
     <string name="add">Dodaj</string>
     <string name="add_tile">Dodaj do ekranu</string>
     <string name="add_group_car">Twoje auto</string>

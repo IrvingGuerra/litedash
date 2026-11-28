@@ -175,6 +175,8 @@
     <string name="design_save">Salvează</string>
     <string name="design_delete_title">Ștergi stilul %1$s?</string>
     <string name="design_delete_message">Dispare din stilurile tale. Ecranul principal actual nu se schimbă.</string>
+    <string name="page_wallpaper_own">Fundal propriu pentru această pagină</string>
+    <string name="page_wallpaper_own_help">Când e oprit, pagina folosește fundalul tuturor paginilor.</string>
     <string name="add">Adaugă</string>
     <string name="add_tile">Adaugă pe ecranul principal</string>
     <string name="add_group_car">Mașina ta</string>
