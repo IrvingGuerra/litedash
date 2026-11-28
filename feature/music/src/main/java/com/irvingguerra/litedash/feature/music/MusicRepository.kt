@@ -1083,9 +1083,21 @@ class MusicRepository(internal val context: Context) {
             .onFailure { trace("no se abrió el Bluetooth (${it.javaClass.simpleName})") }.isSuccess
     }
 
-    /** Abre la app que está sonando o, si no hay, la tocada o la elegida en Ajustes. */
+    /**
+     * Abre la app que está sonando o, si no hay, la tocada o la elegida en Ajustes. Si esa no tiene pantalla (el
+     * Bluetooth de Android que trae la canción del celular, #13), sigue con la siguiente; en Bluetooth, al final la app
+     * de Bluetooth de fábrica y, sin ninguna, los ajustes de Bluetooth.
+     */
     fun openApp() {
-        open(music.controller?.packageName ?: song?.pkg?.ifEmpty { null } ?: modeApp ?: return)
+        val bluetooth = mode == MusicMode.BLUETOOTH
+        val candidates = openCandidates(
+            music.controller?.packageName, song?.pkg, modeApp,
+            factory = if (bluetooth) sourceApps[SourceKind.BLUETOOTH] ?: knownBluetooth else null,
+        )
+        if (candidates.any { open(it) != Opened.NONE }) return
+        if (bluetooth) runCatching {
+            context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }.onFailure { trace("no se abrieron los ajustes de Bluetooth (${it.javaClass.simpleName})") }
     }
 
     /** Si devuelve true, ya abrió la app a su manera (p. ej. en pantalla dividida). */

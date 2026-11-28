@@ -387,3 +387,11 @@ internal fun phoneStep(
     val started = onBluetooth && modeAfter == MusicMode.BLUETOOTH && (!s.onBluetooth || !recipeApplied)
     return PhoneStep(state, hold = hold, started = started)
 }
+
+/**
+ * A quién intenta abrir el botón de la app de la vista en grande, en orden y sin repetir: la que suena ([controller]),
+ * la de la canción ([song]), la elegida para el modo ([modeApp]) y, en Bluetooth, la de fábrica ([factory]). Se usa la
+ * primera que abra: con la canción del celular por el Bluetooth de Android las tres primeras pueden no tener pantalla (#13).
+ */
+internal fun openCandidates(controller: String?, song: String?, modeApp: String?, factory: String?): List<String> =
+    listOf(controller, song, modeApp, factory).mapNotNull { it?.ifEmpty { null } }.distinct()

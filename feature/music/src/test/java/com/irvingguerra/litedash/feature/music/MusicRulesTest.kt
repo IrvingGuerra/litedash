@@ -456,4 +456,17 @@ class MusicRulesTest {
         assertFalse(pressPlays(shownPlaying = null) { true })
         assertTrue(pressPlays(shownPlaying = null) { false })
     }
+
+    @Test
+    fun issue13_openAppFallsBackToTheFactoryBluetoothApp() {
+        // Essgoo: la canción viene del Bluetooth de Android (sin pantalla) y la de fábrica es la que se quiere abrir.
+        assertEquals(
+            listOf("com.android.bluetooth", "com.autochips.bluetooth"),
+            openCandidates("com.android.bluetooth", "com.android.bluetooth", "com.android.bluetooth", "com.autochips.bluetooth"),
+        )
+        // App de música normal: igual que antes, la que suena primero.
+        assertEquals(listOf("com.spotify.music"), openCandidates("com.spotify.music", "com.spotify.music", null, null))
+        assertEquals(listOf("com.spotify.music"), openCandidates(null, "", "com.spotify.music", null))
+        assertTrue(openCandidates(null, null, null, null).isEmpty())
+    }
 }
