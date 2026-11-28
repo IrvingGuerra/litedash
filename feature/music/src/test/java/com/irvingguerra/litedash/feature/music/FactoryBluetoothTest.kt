@@ -65,4 +65,12 @@ class FactoryBluetoothTest {
         for (family in HeadUnit.entries) assertEquals(family.name, own[family].orEmpty() + base, family.bluetoothRecipes)
         for (kind in FactoryBluetoothKind.all + GenericBluetooth) assertEquals(kind.id, own[kind.family].orEmpty() + base, kind.recipes)
     }
+
+    @Test
+    fun everyBroadcastAProfileReadsIsListenedTo() {
+        // Lo que lee un perfil con sus claves debe estar en los avisos que escucha el receptor (y no repetirse entre perfiles).
+        val read = FactoryBluetoothKind.all.flatMap { it.broadcasts }
+        assertEquals(read.distinct(), read)
+        for (action in read) assertEquals(action, true, action in BroadcastMeta.ACTIONS)
+    }
 }

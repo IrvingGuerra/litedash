@@ -32,6 +32,15 @@ internal abstract class FactoryBluetoothKind(
      */
     open val asksSoundWhenPhoneStarts: Boolean = false
 
+    /** Los avisos de qué suena que lee con sus propias claves ([readBroadcast]); van en [BroadcastMeta.ACTIONS]. */
+    open val broadcasts: List<String> = emptyList()
+
+    /**
+     * Lee uno de sus [broadcasts]; null = no trae nada suyo y [BroadcastMeta.parse] lo lee como el aviso de cualquier app.
+     * Lo que devuelve sin canción ni estado se descarta igual que siempre.
+     */
+    open fun readBroadcast(action: String, extras: Map<String, Any?>): BroadcastMeta? = null
+
     companion object {
         /**
          * Los perfiles de marca en el orden de prioridad de siempre (antes una sola lista `BRAND_BLUETOOTH`; las nuevas,
@@ -48,6 +57,9 @@ internal abstract class FactoryBluetoothKind(
         /** El perfil de la familia de la pantalla ([HeadUnit.of]); sin uno de marca, el genérico. */
         fun forFamily(family: HeadUnit): FactoryBluetoothKind =
             all.firstOrNull { it.family == family && it.family != HeadUnit.GENERIC } ?: GenericBluetooth
+
+        /** Quién lee cada aviso con claves propias ([broadcasts]). */
+        val readers: Map<String, FactoryBluetoothKind> by lazy { all.flatMap { k -> k.broadcasts.map { it to k } }.toMap() }
 
         /** El perfil al que pertenece la app [pkg]; null si no es de marca. */
         fun ofPackage(pkg: String): FactoryBluetoothKind? = all.firstOrNull { k -> k.apps.any { it.pkg == pkg } }
@@ -88,10 +100,32 @@ internal object GoodocomBluetooth : FactoryBluetoothKind(
     "goodocom", HeadUnit.GENERIC, BrandBluetooth("com.goodocom.gocsdk", HeadUnit.GENERIC, music = false),
 )
 
-/** Autochips (AC8227L, Essgoo): avisa la canción y el estado por `AvrcpCtPlayerUtility` ([BroadcastMeta]). */
+/** Autochips (AC8227L, Essgoo): avisa la canción y el estado por `AvrcpCtPlayerUtility`, cada uno en su aviso. */
 internal object AutochipsBluetooth : FactoryBluetoothKind("autochips", HeadUnit.AUTOCHIPS, BrandBluetooth("com.autochips.bluetooth", HeadUnit.AUTOCHIPS)) {
     /** #13 (Essgoo, 3FE18D y 664682): el celular ya sonaba y nadie pedía la entrada de audio. */
     override val asksSoundWhenPhoneStarts = true
+
+    private const val AVRCP = "com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility."
+    const val MEDIA = AVRCP + "action.ACTION_MEDIA_DATA_UPDATE"
+    const val PLAYBACK = AVRCP + "action.ACTION_PLAYBACK_DATA_UPDATE"
+
+    /** Canción y estado llegan sin paquete: [BroadcastMeta.over] los junta. */
+    override val broadcasts = listOf(MEDIA, PLAYBACK)
+
+    override fun readBroadcast(action: String, extras: Map<String, Any?>): BroadcastMeta? = when (action) {
+        MEDIA -> BroadcastMeta(
+            title = extras.text(AVRCP + "extra.MEDIA_TITLE"),
+            artist = extras.text(AVRCP + "extra.MEDIA_ARTIST"),
+            // El álbum viene como "MEIDA" (errata de la app de Autochips) y no se lee.
+            playing = null, pkg = null, bluetooth = true,
+        )
+        PLAYBACK -> BroadcastMeta(
+            title = null, artist = null,
+            playing = (extras[AVRCP + "extra.PLAYBACK_STATUS"] as? Number)?.let { it.toInt() == 1 },
+            pkg = null, bluetooth = true,
+        )
+        else -> null
+    }
 }
 
 /** YF Tech: módulo como Goodocom (chip propio, familia no). */
