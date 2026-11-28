@@ -168,6 +168,13 @@
     <string name="design_neon_tagline">Mode malam dengan cahaya.</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">Aurora di malam hari, kabut di siang hari.</string>
+    <string name="designs_yours">Milik Anda</string>
+    <string name="design_save_mine">Simpan layar beranda saya</string>
+    <string name="design_save_mine_help">Menyimpan halaman ini, warna, dan wallpaper Anda sebagai desain Anda sendiri.</string>
+    <string name="design_mine_name">Desain Saya %1$d</string>
+    <string name="design_save">Simpan</string>
+    <string name="design_delete_title">Hapus desain %1$s?</string>
+    <string name="design_delete_message">Desain ini dihapus dari daftar desain Anda. Layar beranda Anda saat ini tidak berubah.</string>
     <string name="add">Tambah</string>
     <string name="add_tile">Tambah ke beranda</string>
     <string name="add_group_car">Mobil Anda</string>

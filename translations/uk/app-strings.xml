@@ -168,6 +168,13 @@
     <string name="design_neon_tagline">Нічний, із сяйвом.</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">Уночі сяйво, удень туман.</string>
+    <string name="designs_yours">Твої</string>
+    <string name="design_save_mine">Зберегти мій головний екран</string>
+    <string name="design_save_mine_help">Зберігає цю сторінку, твої кольори й шпалери як твій власний стиль.</string>
+    <string name="design_mine_name">Мій стиль %1$d</string>
+    <string name="design_save">Зберегти</string>
+    <string name="design_delete_title">Видалити стиль %1$s?</string>
+    <string name="design_delete_message">Він зникне з твоїх стилів. Поточний головний екран не зміниться.</string>
     <string name="add">Додати</string>
     <string name="add_tile">Додати на головний екран</string>
     <string name="add_group_car">Твоє авто</string>

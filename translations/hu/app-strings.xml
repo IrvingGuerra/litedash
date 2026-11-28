@@ -168,6 +168,13 @@
     <string name="design_neon_tagline">Éjszakai, ragyogással.</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">Éjjel sarki fény, nappal köd.</string>
+    <string name="designs_yours">Sajátok</string>
+    <string name="design_save_mine">Kezdőképernyőm mentése</string>
+    <string name="design_save_mine_help">Elmenti ezt az oldalt, a színeidet és a háttérképedet saját stílusként.</string>
+    <string name="design_mine_name">Saját stílus %1$d</string>
+    <string name="design_save">Mentés</string>
+    <string name="design_delete_title">Törlöd a(z) %1$s stílust?</string>
+    <string name="design_delete_message">Kikerül a stílusaid közül. A jelenlegi kezdőképernyőd nem változik.</string>
     <string name="add">Hozzáadás</string>
     <string name="add_tile">Hozzáadás a kezdőképernyőhöz</string>
     <string name="add_group_car">Az autód</string>

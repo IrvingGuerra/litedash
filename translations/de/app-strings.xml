@@ -168,6 +168,13 @@
     <string name="design_neon_tagline">Für die Nacht, mit Leuchten.</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">Polarlicht bei Nacht, Nebel bei Tag.</string>
+    <string name="designs_yours">Deine</string>
+    <string name="design_save_mine">Meinen Startbildschirm speichern</string>
+    <string name="design_save_mine_help">Speichert diese Seite, deine Farben und deinen Hintergrund als eigenen Stil.</string>
+    <string name="design_mine_name">Mein Stil %1$d</string>
+    <string name="design_save">Speichern</string>
+    <string name="design_delete_title">Stil %1$s löschen?</string>
+    <string name="design_delete_message">Er verschwindet aus deinen Stilen. Dein aktueller Startbildschirm bleibt, wie er ist.</string>
     <string name="add">Hinzufügen</string>
     <string name="add_tile">Zum Start hinzufügen</string>
     <string name="add_group_car">Dein Auto</string>

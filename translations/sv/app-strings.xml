@@ -168,6 +168,13 @@
     <string name="design_neon_tagline">För natten, med ett sken.</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">Norrsken på natten, dimma på dagen.</string>
+    <string name="designs_yours">Dina</string>
+    <string name="design_save_mine">Spara min startskärm</string>
+    <string name="design_save_mine_help">Sparar den här sidan, dina färger och din bakgrund som en egen stil.</string>
+    <string name="design_mine_name">Min stil %1$d</string>
+    <string name="design_save">Spara</string>
+    <string name="design_delete_title">Ta bort stilen %1$s?</string>
+    <string name="design_delete_message">Den tas bort från dina stilar. Din nuvarande startskärm ändras inte.</string>
     <string name="add">Lägg till</string>
     <string name="add_tile">Lägg till på start</string>
     <string name="add_group_car">Din bil</string>

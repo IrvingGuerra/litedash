@@ -168,6 +168,13 @@
     <string name="design_neon_tagline">밤을 위한 은은한 빛.</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">밤에는 오로라, 낮에는 안개.</string>
+    <string name="designs_yours">내 디자인</string>
+    <string name="design_save_mine">내 홈 화면 저장</string>
+    <string name="design_save_mine_help">이 페이지와 색상, 배경화면을 나만의 디자인으로 저장해요.</string>
+    <string name="design_mine_name">내 디자인 %1$d</string>
+    <string name="design_save">저장</string>
+    <string name="design_delete_title">%1$s 디자인을 삭제할까요?</string>
+    <string name="design_delete_message">디자인 목록에서 삭제돼요. 지금 홈 화면은 바뀌지 않아요.</string>
     <string name="add">추가</string>
     <string name="add_tile">홈에 추가</string>
     <string name="add_group_car">내 차</string>

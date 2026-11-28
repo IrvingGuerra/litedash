@@ -168,6 +168,13 @@
     <string name="design_neon_tagline">Ночной, со свечением.</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">Ночью сияние, днём туман.</string>
+    <string name="designs_yours">Твои</string>
+    <string name="design_save_mine">Сохранить мой главный экран</string>
+    <string name="design_save_mine_help">Сохраняет эту страницу, твои цвета и обои как твой собственный стиль.</string>
+    <string name="design_mine_name">Мой стиль %1$d</string>
+    <string name="design_save">Сохранить</string>
+    <string name="design_delete_title">Удалить стиль %1$s?</string>
+    <string name="design_delete_message">Он исчезнет из твоих стилей. Текущий главный экран не изменится.</string>
     <string name="add">Добавить</string>
     <string name="add_tile">Добавить на главный экран</string>
     <string name="add_group_car">Твоя машина</string>

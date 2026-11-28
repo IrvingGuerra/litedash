@@ -168,6 +168,13 @@
     <string name="design_neon_tagline">De noapte, cu strălucire.</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">Auroră noaptea, ceață ziua.</string>
+    <string name="designs_yours">Ale tale</string>
+    <string name="design_save_mine">Salvează ecranul meu principal</string>
+    <string name="design_save_mine_help">Salvează această pagină, culorile tale și fundalul ca stil propriu.</string>
+    <string name="design_mine_name">Stilul meu %1$d</string>
+    <string name="design_save">Salvează</string>
+    <string name="design_delete_title">Ștergi stilul %1$s?</string>
+    <string name="design_delete_message">Dispare din stilurile tale. Ecranul principal actual nu se schimbă.</string>
     <string name="add">Adaugă</string>
     <string name="add_tile">Adaugă pe ecranul principal</string>
     <string name="add_group_car">Mașina ta</string>

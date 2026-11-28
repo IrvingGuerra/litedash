@@ -168,6 +168,13 @@
     <string name="design_neon_tagline">Gece için, ışıltılı.</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">Gece kutup ışıkları, gündüz sis.</string>
+    <string name="designs_yours">Sizinkiler</string>
+    <string name="design_save_mine">Ana ekranımı kaydet</string>
+    <string name="design_save_mine_help">Bu sayfayı, renklerinizi ve duvar kâğıdınızı kendi tasarımınız olarak kaydeder.</string>
+    <string name="design_mine_name">Tasarımım %1$d</string>
+    <string name="design_save">Kaydet</string>
+    <string name="design_delete_title">%1$s tasarımı silinsin mi?</string>
+    <string name="design_delete_message">Tasarımlarınızdan kaldırılır. Şu anki ana ekranınız değişmez.</string>
     <string name="add">Ekle</string>
     <string name="add_tile">Ana ekrana ekle</string>
     <string name="add_group_car">Arabanız</string>

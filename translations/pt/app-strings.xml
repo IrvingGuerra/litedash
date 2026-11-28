@@ -170,6 +170,13 @@
     <string name="design_neon_tagline">Noturno, com brilho.</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">Aurora à noite, névoa de dia.</string>
+    <string name="designs_yours">Seus</string>
+    <string name="design_save_mine">Salvar minha tela inicial</string>
+    <string name="design_save_mine_help">Salva esta página, suas cores e seu papel de parede como um estilo seu.</string>
+    <string name="design_mine_name">Meu estilo %1$d</string>
+    <string name="design_save">Salvar</string>
+    <string name="design_delete_title">Excluir o estilo %1$s?</string>
+    <string name="design_delete_message">Ele sai dos seus estilos. Sua tela inicial atual não muda.</string>
     <string name="add">Adicionar</string>
     <string name="add_tile">Adicionar à tela inicial</string>
     <string name="add_group_car">Seu carro</string>

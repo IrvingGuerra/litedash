@@ -170,6 +170,13 @@
     <string name="design_neon_tagline">Pour la nuit, avec une lueur.</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">Aurore la nuit, brume le jour.</string>
+    <string name="designs_yours">Les vôtres</string>
+    <string name="design_save_mine">Enregistrer mon écran d\'accueil</string>
+    <string name="design_save_mine_help">Enregistre cette page, vos couleurs et votre fond d\'écran comme votre propre style.</string>
+    <string name="design_mine_name">Mon style %1$d</string>
+    <string name="design_save">Enregistrer</string>
+    <string name="design_delete_title">Supprimer le style %1$s ?</string>
+    <string name="design_delete_message">Il est retiré de vos styles. Votre écran d\'accueil actuel ne change pas.</string>
     <string name="add">Ajouter</string>
     <string name="add_tile">Ajouter à l\'accueil</string>
     <string name="add_group_car">Votre voiture</string>

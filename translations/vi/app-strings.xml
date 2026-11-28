@@ -168,6 +168,13 @@
     <string name="design_neon_tagline">Cho ban đêm, có ánh sáng dịu.</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">Cực quang về đêm, sương mù ban ngày.</string>
+    <string name="designs_yours">Của bạn</string>
+    <string name="design_save_mine">Lưu màn hình chính của tôi</string>
+    <string name="design_save_mine_help">Lưu trang này, màu sắc và hình nền của bạn thành phong cách riêng.</string>
+    <string name="design_mine_name">Phong cách của tôi %1$d</string>
+    <string name="design_save">Lưu</string>
+    <string name="design_delete_title">Xóa phong cách %1$s?</string>
+    <string name="design_delete_message">Phong cách này sẽ bị gỡ khỏi danh sách của bạn. Màn hình chính hiện tại không thay đổi.</string>
     <string name="add">Thêm</string>
     <string name="add_tile">Thêm vào màn hình chính</string>
     <string name="add_group_car">Xe của bạn</string>

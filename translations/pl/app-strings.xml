@@ -168,6 +168,13 @@
     <string name="design_neon_tagline">Nocny, z poświatą.</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">Zorza nocą, mgła za dnia.</string>
+    <string name="designs_yours">Twoje</string>
+    <string name="design_save_mine">Zapisz mój ekran główny</string>
+    <string name="design_save_mine_help">Zapisuje tę stronę, Twoje kolory i tapetę jako Twój własny styl.</string>
+    <string name="design_mine_name">Mój styl %1$d</string>
+    <string name="design_save">Zapisz</string>
+    <string name="design_delete_title">Usunąć styl %1$s?</string>
+    <string name="design_delete_message">Zniknie z Twoich stylów. Twój obecny ekran główny się nie zmieni.</string>
     <string name="add">Dodaj</string>
     <string name="add_tile">Dodaj do ekranu</string>
     <string name="add_group_car">Twoje auto</string>

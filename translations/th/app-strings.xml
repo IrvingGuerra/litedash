@@ -168,6 +168,13 @@
     <string name="design_neon_tagline">สำหรับกลางคืน มีแสงเรือง</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">แสงออโรราตอนกลางคืน หมอกตอนกลางวัน</string>
+    <string name="designs_yours">ของคุณ</string>
+    <string name="design_save_mine">บันทึกหน้าจอหลักของฉัน</string>
+    <string name="design_save_mine_help">บันทึกหน้านี้ สี และวอลเปเปอร์ของคุณเป็นดีไซน์ของคุณเอง</string>
+    <string name="design_mine_name">ดีไซน์ของฉัน %1$d</string>
+    <string name="design_save">บันทึก</string>
+    <string name="design_delete_title">ลบดีไซน์ %1$s ไหม</string>
+    <string name="design_delete_message">จะถูกนำออกจากดีไซน์ของคุณ หน้าจอหลักตอนนี้จะไม่เปลี่ยน</string>
     <string name="add">เพิ่ม</string>
     <string name="add_tile">เพิ่มลงหน้าหลัก</string>
     <string name="add_group_car">รถของคุณ</string>

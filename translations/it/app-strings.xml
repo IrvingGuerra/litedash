@@ -168,6 +168,13 @@
     <string name="design_neon_tagline">Di notte, con un bagliore.</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">Aurora di notte, nebbia di giorno.</string>
+    <string name="designs_yours">I tuoi</string>
+    <string name="design_save_mine">Salva la mia Home</string>
+    <string name="design_save_mine_help">Salva questa pagina, i tuoi colori e lo sfondo come uno stile tuo.</string>
+    <string name="design_mine_name">Il mio stile %1$d</string>
+    <string name="design_save">Salva</string>
+    <string name="design_delete_title">Eliminare lo stile %1$s?</string>
+    <string name="design_delete_message">Viene tolto dai tuoi stili. La tua Home attuale non cambia.</string>
     <string name="add">Aggiungi</string>
     <string name="add_tile">Aggiungi alla Home</string>
     <string name="add_group_car">La tua auto</string>

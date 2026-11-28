@@ -168,6 +168,13 @@
     <string name="design_neon_tagline">Νυχτερινό, με λάμψη.</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">Σέλας τη νύχτα, ομίχλη τη μέρα.</string>
+    <string name="designs_yours">Δικά σας</string>
+    <string name="design_save_mine">Αποθήκευση της αρχικής μου οθόνης</string>
+    <string name="design_save_mine_help">Αποθηκεύει αυτή τη σελίδα, τα χρώματα και την ταπετσαρία σας ως δικό σας στυλ.</string>
+    <string name="design_mine_name">Το στυλ μου %1$d</string>
+    <string name="design_save">Αποθήκευση</string>
+    <string name="design_delete_title">Διαγραφή του στυλ %1$s;</string>
+    <string name="design_delete_message">Αφαιρείται από τα στυλ σας. Η τρέχουσα αρχική οθόνη σας δεν αλλάζει.</string>
     <string name="add">Προσθήκη</string>
     <string name="add_tile">Προσθήκη στην αρχική</string>
     <string name="add_group_car">Το αυτοκίνητό σας</string>

@@ -168,6 +168,13 @@
     <string name="design_neon_tagline">रात के लिए, चमक के साथ।</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">रात में ध्रुवीय ज्योति, दिन में धुंध।</string>
+    <string name="designs_yours">आपके</string>
+    <string name="design_save_mine">मेरी होम स्क्रीन सेव करें</string>
+    <string name="design_save_mine_help">यह पेज, आपके रंग और वॉलपेपर आपके अपने डिज़ाइन के रूप में सेव करता है।</string>
+    <string name="design_mine_name">मेरा डिज़ाइन %1$d</string>
+    <string name="design_save">सेव करें</string>
+    <string name="design_delete_title">%1$s डिज़ाइन मिटाएँ?</string>
+    <string name="design_delete_message">यह आपके डिज़ाइनों से हट जाता है। आपकी मौजूदा होम स्क्रीन नहीं बदलती।</string>
     <string name="add">जोड़ें</string>
     <string name="add_tile">होम पर जोड़ें</string>
     <string name="add_group_car">आपकी कार</string>

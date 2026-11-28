@@ -168,6 +168,13 @@
     <string name="design_neon_tagline">夜向け、ほのかな光。</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">夜はオーロラ、昼は霧。</string>
+    <string name="designs_yours">マイデザイン</string>
+    <string name="design_save_mine">ホーム画面を保存</string>
+    <string name="design_save_mine_help">このページと色、壁紙を自分だけのデザインとして保存します。</string>
+    <string name="design_mine_name">マイデザイン %1$d</string>
+    <string name="design_save">保存</string>
+    <string name="design_delete_title">デザイン「%1$s」を削除しますか？</string>
+    <string name="design_delete_message">デザインの一覧から削除されます。今のホーム画面は変わりません。</string>
     <string name="add">追加</string>
     <string name="add_tile">ホームに追加</string>
     <string name="add_group_car">あなたの車</string>

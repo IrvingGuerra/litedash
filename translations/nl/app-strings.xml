@@ -168,6 +168,13 @@
     <string name="design_neon_tagline">Voor de nacht, met een gloed.</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">Noorderlicht \'s nachts, mist overdag.</string>
+    <string name="designs_yours">Van jou</string>
+    <string name="design_save_mine">Mijn startscherm opslaan</string>
+    <string name="design_save_mine_help">Slaat deze pagina, je kleuren en je achtergrond op als eigen stijl.</string>
+    <string name="design_mine_name">Mijn stijl %1$d</string>
+    <string name="design_save">Opslaan</string>
+    <string name="design_delete_title">Stijl %1$s verwijderen?</string>
+    <string name="design_delete_message">Hij verdwijnt uit je stijlen. Je huidige startscherm verandert niet.</string>
     <string name="add">Toevoegen</string>
     <string name="add_tile">Aan startscherm toevoegen</string>
     <string name="add_group_car">Je auto</string>

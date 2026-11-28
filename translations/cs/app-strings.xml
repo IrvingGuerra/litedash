@@ -168,6 +168,13 @@
     <string name="design_neon_tagline">Noční, se září.</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">Polární záře v noci, mlha ve dne.</string>
+    <string name="designs_yours">Tvoje</string>
+    <string name="design_save_mine">Uložit mou plochu</string>
+    <string name="design_save_mine_help">Uloží tuto stránku, tvé barvy a tapetu jako tvůj vlastní styl.</string>
+    <string name="design_mine_name">Můj styl %1$d</string>
+    <string name="design_save">Uložit</string>
+    <string name="design_delete_title">Smazat styl %1$s?</string>
+    <string name="design_delete_message">Zmizí z tvých stylů. Tvoje současná plocha se nezmění.</string>
     <string name="add">Přidat</string>
     <string name="add_tile">Přidat na plochu</string>
     <string name="add_group_car">Tvoje auto</string>

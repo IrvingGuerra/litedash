@@ -168,6 +168,13 @@
     <string name="design_neon_tagline">夜间模式，带光晕。</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">夜晚极光，白天薄雾。</string>
+    <string name="designs_yours">我的</string>
+    <string name="design_save_mine">保存我的主屏幕</string>
+    <string name="design_save_mine_help">将此页面、你的颜色和壁纸保存为你自己的风格。</string>
+    <string name="design_mine_name">我的风格 %1$d</string>
+    <string name="design_save">保存</string>
+    <string name="design_delete_title">删除“%1$s”风格？</string>
+    <string name="design_delete_message">它会从你的风格中移除。当前主屏幕不会改变。</string>
     <string name="add">添加</string>
     <string name="add_tile">添加到主屏幕</string>
     <string name="add_group_car">你的车</string>
