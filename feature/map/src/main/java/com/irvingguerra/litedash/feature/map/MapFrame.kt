@@ -483,7 +483,9 @@ internal class MapFrame : ScreenPoint {
                 canvas.drawPath(flowLine, flowPaint)
             }
         }
-        labelPaint?.let { paint -> drawIntoCanvas { drawLabels(it.nativeCanvas, layout.placed, paint) } }
+        // De fondo del inicio, los nombres solo en el hueco libre: bajo las tarjetas de vidrio se veían cruzándolas.
+        val within = focus?.let { Rect(it.left * size.width, it.top * size.height, it.right * size.width, it.bottom * size.height) }
+        labelPaint?.let { paint -> drawIntoCanvas { drawLabels(it.nativeCanvas, layout.placed, paint, within) } }
         if (pinShown) drawPin(accent)
         if (youShown) drawArrow(marker, focus)
     }
@@ -770,11 +772,17 @@ internal inline fun parentFallback(z: Int, x: Int, y: Int, has: (Long) -> Boolea
     return 0
 }
 
-/** Los nombres ya acomodados, derechos y centrados en su tramo. */
-private fun drawLabels(canvas: android.graphics.Canvas, labels: List<PlacedLabel>, paint: android.graphics.Paint) {
+/** Los nombres ya acomodados, derechos y centrados en su tramo; con [within], solo los que caben enteros ahí. */
+private fun drawLabels(canvas: android.graphics.Canvas, labels: List<PlacedLabel>, paint: android.graphics.Paint, within: Rect? = null) {
     val baseline = paint.textSize * 0.35f
     for (i in labels.indices) {
         val l = labels[i]
+        if (within != null) {
+            val a = Math.toRadians(l.degrees.toDouble())
+            val dx = kotlin.math.abs(kotlin.math.cos(a)).toFloat() * l.width / 2
+            val dy = kotlin.math.abs(kotlin.math.sin(a)).toFloat() * l.width / 2
+            if (l.x - dx < within.left || l.x + dx > within.right || l.y - dy < within.top || l.y + dy > within.bottom) continue
+        }
         canvas.save()
         canvas.translate(l.x, l.y)
         canvas.rotate(l.degrees)
