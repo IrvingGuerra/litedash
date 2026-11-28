@@ -57,15 +57,15 @@ private fun glass(x: Float) = MIN_OPACITY + (1f - MIN_OPACITY) * x
 val DESIGNS = listOf(
     Design(
         "graphite", R.string.design_graphite, R.string.design_graphite_tagline, Template.DESIGN_GRAPHITE, ThemeMode.DARK,
-        wallpaper = "grafito-cinta", carColor = Color(0xFFC9CED4),
+        wallpaper = "grafito-cielo", carColor = Color(0xFFC9CED4),
     ),
     Design(
         "cloud", R.string.design_cloud, R.string.design_cloud_tagline, Template.DESIGN_CLOUD, ThemeMode.LIGHT,
-        wallpaper = "nube-alba", carColor = Color(0xFFF4F6F8), accent = Color(0xFFFF9F0A),
+        wallpaper = "nube-dunas", carColor = Color(0xFFF4F6F8), accent = Color(0xFFFF9F0A),
     ),
     Design(
         "track", R.string.design_track, R.string.design_track_tagline, Template.DESIGN_TRACK, ThemeMode.DARK,
-        wallpaper = "pista-estela", carColor = Color(0xFFA3141D), cardOpacity = glass(0.5f), accent = Color(0xFFFF453A),
+        wallpaper = "pista-ocaso", carColor = Color(0xFFA3141D), cardOpacity = glass(0.5f), accent = Color(0xFFFF453A),
         // El mapa grafito de su galería («Como mi interfaz» sin color de tarjetas tomaría el rojo de la interfaz).
         mapPalette = MapPalettes.CUSTOM, mapColor = 0x1A1D22,
     ),
@@ -75,7 +75,7 @@ val DESIGNS = listOf(
     ),
     Design(
         "neon", R.string.design_neon, R.string.design_neon_tagline, Template.DESIGN_NEON, ThemeMode.DARK,
-        wallpaper = "neon-orbes", carColor = Color(0xFF1D2026), cardColor = Color(0xFF7A3FE0), accent = Color(0xFFFF4F9A),
+        wallpaper = "neon-luna", carColor = Color(0xFF1D2026), cardColor = Color(0xFF7A3FE0), accent = Color(0xFFFF4F9A),
         mapPalette = MapPalettes.INTERFACE,
     ),
 )
@@ -87,6 +87,9 @@ val DESIGNS = listOf(
 private val WALLPAPER_PAIRS = listOf(
     "grafito-cinta" to "grafito-plata", "nube-noche" to "nube-alba", "pista-estela" to "pista-dia", "columna-acero" to "columna-dia",
     "neon-orbes" to "neon-dia", "arena-noche" to "arena-dunas", "bosque-luz" to "bosque-dia",
+    // Las fotos (1.5.28): paisajes con detalle, que es lo que el canto del cristal dobla. Los de arriba (por código) se
+    // quedan para quien ya los tiene puestos y en la galería de fondos.
+    "grafito-cielo" to "grafito-niebla", "nube-estrellas" to "nube-dunas", "pista-ocaso" to "pista-salar", "neon-luna" to "neon-alba",
 )
 
 /**
