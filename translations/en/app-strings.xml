@@ -139,14 +139,14 @@
     <string name="templates_wallpaper_help">Your background photo with a few cards on top and the time floating. Pick the background while arranging → Wallpaper or in Settings → Home &amp; look → Home.</string>
     <string name="template_map_car">Map and car</string>
     <string name="template_copilot">Co-pilot</string>
-    <string name="template_route">Route</string>
+    <string name="template_route">Map and speedometer</string>
     <string name="template_music_radio">Music and radio</string>
     <string name="template_vertical_map">Portrait with map</string>
     <string name="template_map_background">Map background</string>
     <string name="templates_tab_map">Map</string>
     <string name="templates_map_help">The live map with your position and next turn.</string>
     <string name="designs">Designs</string>
-    <string name="designs_help">One tap sets the layout, background, colors, map and car. All free; change anything you like afterwards.</string>
+    <string name="designs_help">Each one sets the layout, background, colors, map and car. All free; change anything you like afterwards.</string>
     <string name="design_title">Design</string>
     <string name="design_none">None yet</string>
     <string name="design_change">Change</string>

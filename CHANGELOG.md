@@ -4,6 +4,19 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.27] - 2026-11-27
+
+Arreglos de la música por Bluetooth y nombres más claros.
+
+### Cambiado
+- **Deslizar sobre el widget Música o Radio vuelve a cambiar de canción o de estación.** Deslizar desde cualquier otro
+  widget o desde un hueco sigue cambiando de página.
+- La plantilla «Ruta» ahora se llama **«Mapa y velocímetro»** (se confundía con el Diseño Ruta).
+
+### Arreglado
+- **«Abrir app» en la pestaña Bluetooth de Música** no hacía nada cuando la canción venía del celular por el Bluetooth
+  de Android: ahora abre la app de Bluetooth de tu pantalla y, si no tiene, los ajustes de Bluetooth.
+
 ## [1.5.26] - 2026-11-26
 
 Regresan las Plantillas, menos Diseños y fondos mucho más limpios.

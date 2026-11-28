@@ -3,6 +3,19 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.27] - 2026-11-27
+
+Bluetooth music fixes and clearer names.
+
+### Changed
+- **Swiping on the Music or Radio widget changes the song or station again.** Swiping from any other widget or from an
+  empty spot still changes the page.
+- The "Route" layout is now called **"Map and speedometer"** (it was confused with the Route Design).
+
+### Fixed
+- **"Open app" on the Bluetooth tab of Music** did nothing when the song came from your phone through Android's
+  Bluetooth: it now opens your head unit's Bluetooth app or, if there isn't one, the Bluetooth settings.
+
 ## [1.5.26] - 2026-11-26
 
 Layouts are back, fewer Designs and much cleaner wallpapers.
