@@ -686,10 +686,13 @@ private const val PLAIN_CONTRAST = 3f
 /** Puntos por lado con que se saca el color medio de tu fondo. */
 private const val MEAN_SAMPLES = 64
 /** El canto del cristal que dobla tu fondo: cuánto entra desde la orilla y hasta cuánto empuja lo que se ve. */
-private val LENS_DEPTH = 30.dp
+private val LENS_DEPTH = 44.dp
 private val LENS_PUSH = 40.dp
-/** Hasta qué fracción de la franja el canto va del todo nítido; de ahí al centro se funde con el esmerilado. */
-private const val LENS_CLEAR = 0.45f
+/**
+ * Hasta qué fracción de la franja el canto va del todo nítido; de ahí al centro se funde con el esmerilado, poco a poco:
+ * un corte rápido se veía como un marco por dentro de la tarjeta (Irving, 2026-11-27).
+ */
+private const val LENS_CLEAR = 0.12f
 /** Cuánto más (el azul) o menos (el rojo) se dobla cada color en la orilla: el filo prismático. */
 private const val LENS_DISPERSION = 0.12f
 /** A qué fracción del tamaño de la tarjeta se calcula el fondo doblado, y su tope de pixeles (≈ 1.6 MB por tarjeta). */
