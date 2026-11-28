@@ -171,6 +171,13 @@
     <string name="design_neon_tagline">Night mode with a glow.</string>
     <string name="design_emerald">Emerald</string>
     <string name="design_emerald_tagline">Aurora at night, mist by day.</string>
+    <string name="designs_yours">Yours</string>
+    <string name="design_save_mine">Save my home screen</string>
+    <string name="design_save_mine_help">Saves this page, your colors and your wallpaper as a Design of your own.</string>
+    <string name="design_mine_name">My Design %1$d</string>
+    <string name="design_save">Save</string>
+    <string name="design_delete_title">Delete the design %1$s?</string>
+    <string name="design_delete_message">It is removed from your Designs. Your current home screen does not change.</string>
     <string name="add">Add</string>
     <string name="add_tile">Add to home</string>
     <string name="add_widget">Add widget</string>

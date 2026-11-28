@@ -1020,6 +1020,66 @@ internal suspend fun clearWallpaper(context: Context) = withContext(NonCancellab
     }
 }
 
+/** La foto de un Diseño tuyo ([MyDesign]): una copia del fondo del inicio de cuando lo guardaste. */
+private fun designImage(context: Context, id: String) = File(File(context.filesDir, "designs"), "$id.img")
+
+/**
+ * Al guardar un Diseño tuyo: copia el fondo de ahora como su foto. true = quedó; false = no hay imagen de fondo (el
+ * Diseño va sin foto); null = no se pudo copiar (entonces no se guarda el Diseño). Desde el hilo principal.
+ */
+internal suspend fun keepDesignImage(context: Context, id: String): Boolean? = withContext(NonCancellable) {
+    WALLPAPER.lock.withLock {
+        withContext(Dispatchers.IO) {
+            val current = WALLPAPER.file(context)
+            if (!current.exists()) return@withContext false
+            try {
+                val target = designImage(context, id)
+                target.parentFile?.mkdirs()
+                replaceFile(target) { current.copyTo(it, overwrite = true) }
+                target.exists().takeIf { it }
+            } catch (e: IOException) {
+                Log.w(LOG_TAG, "No se pudo guardar la foto del Diseño $id", e)
+                null
+            }
+        }
+    }
+}
+
+/**
+ * Pone de fondo la foto del Diseño tuyo [id] (null o sin archivo = sin imagen: el resplandor del tema), con la huella
+ * de «lo puso un Diseño» (así «Deshacer» regresa el de antes). Sin marca de fondo de LiteDash: no se cambia solo por su
+ * pareja al cambiar el tema (es tu Diseño tal como lo guardaste). Solo después de [keepOwnWallpaper]; [still] se revisa
+ * ya con el candado. Desde el hilo principal.
+ */
+internal suspend fun putDesignImage(context: Context, id: String?, still: () -> Boolean) = withContext(NonCancellable) {
+    WALLPAPER.lock.withLock {
+        if (!still()) return@withLock
+        withContext(Dispatchers.IO) {
+            val source = id?.let { designImage(context, it) }?.takeIf { it.exists() }
+            try {
+                if (source != null) replaceFile(WALLPAPER.file(context)) { source.copyTo(it, overwrite = true) }
+                else WALLPAPER.file(context).delete()
+                wallpaperMarker(context).delete()
+                placeSafely(context)
+            } catch (e: IOException) {
+                Log.w(LOG_TAG, "No se pudo poner la foto del Diseño $id", e)
+            }
+        }
+        WALLPAPER.bump()
+    }
+}
+
+/** Borra la foto del Diseño tuyo [id] (al eliminarlo). */
+internal suspend fun dropDesignImage(context: Context, id: String) = withContext(Dispatchers.IO) { designImage(context, id).delete() }
+
+/** La foto del Diseño tuyo [id] en chico, para su miniatura; null si no tiene o no se pudo leer. */
+internal suspend fun designThumb(context: Context, id: String): ImageBitmap? = withContext(Dispatchers.IO) {
+    val file = designImage(context, id)
+    if (!file.exists()) null else decodeImage("$file", { _, _ -> DESIGN_THUMB_PX }, lowMemory = true) { file.inputStream() }?.asImageBitmap()
+}
+
+private const val DESIGN_THUMB_PX = 480
+
 /** Anota que el fondo de ahora lo puso un Diseño (si no se puede, al deshacer solo no se regresa tu foto). Solo en IO. */
 private fun placeSafely(context: Context) {
     try {

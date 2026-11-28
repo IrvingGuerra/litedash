@@ -190,19 +190,8 @@ internal data class DesignUndo(
 ) {
     fun encode(): String = JSONObject().apply {
         putOpt("design", design)
-        put("theme", look.theme.stored)
-        putOpt("accent", look.accent)
-        putOpt("cards", look.cards)
-        put("cardStyle", look.cardStyle.stored)
-        put("cardOpacity", look.cardOpacity.toDouble())
-        putOpt("mapLook", look.mapLook)
-        put("barStyle", look.barStyle.stored)
-        put("carColor", look.carColor)
-        put("page", page.page)
-        put("grid", page.grid.key)
-        put("layout", page.layout)
-        put("background", page.background.stored)
-        putOpt("template", page.template?.name)
+        putLook(look)
+        putPage(page)
         put("applied", applied)
         put("wallpaper", wallpaper)
         putOpt("pending", pending)
@@ -214,43 +203,92 @@ internal data class DesignUndo(
             if (text.isNullOrEmpty()) return null
             return try {
                 val o = JSONObject(text)
-                val look = DesignLook(
-                    theme = ThemeMode.fromStored(o.getString("theme")) ?: return null,
-                    accent = o.optIntOrNull("accent"),
-                    cards = o.optIntOrNull("cards"),
-                    cardStyle = CardStyle.fromStored(o.getString("cardStyle")),
-                    cardOpacity = o.getDouble("cardOpacity").toFloat(),
-                    mapLook = o.optStringOrNull("mapLook"),
-                    barStyle = BarStyle.fromStored(o.getString("barStyle")),
-                    carColor = o.getInt("carColor"),
-                )
-                val page = PageSnapshot(
-                    page = o.getInt("page"),
-                    grid = PageSnapshot.grid(o.getString("grid")) ?: return null,
-                    layout = o.getString("layout"),
-                    background = PageBackground.fromStored(o.getString("background")),
-                    template = o.optStringOrNull("template")?.let { n -> Template.entries.firstOrNull { it.name == n } },
-                )
+                val look = o.look() ?: return null
+                val page = o.page() ?: return null
                 DesignUndo(o.optStringOrNull("design"), look, page, o.getString("applied"), o.optBoolean("wallpaper"), o.optStringOrNull("pending"))
             } catch (e: JSONException) {
                 null
             }
         }
-
-        private fun JSONObject.optIntOrNull(key: String) = if (has(key) && !isNull(key)) getInt(key) else null
-        private fun JSONObject.optStringOrNull(key: String) = if (has(key) && !isNull(key)) getString(key) else null
     }
 }
 
-/** El aviso «Diseño aplicado · Deshacer» del inicio: qué Diseño y cuántas veces se ha pedido (cada una dura 10 s). */
+private fun JSONObject.optIntOrNull(key: String) = if (has(key) && !isNull(key)) getInt(key) else null
+internal fun JSONObject.optStringOrNull(key: String) = if (has(key) && !isNull(key)) getString(key) else null
+
+/** Lo de toda la app, con las claves de siempre de «Deshacer» (también las llevan los Diseños tuyos: [MyDesign]). */
+internal fun JSONObject.putLook(look: DesignLook) {
+    put("theme", look.theme.stored)
+    putOpt("accent", look.accent)
+    putOpt("cards", look.cards)
+    put("cardStyle", look.cardStyle.stored)
+    put("cardOpacity", look.cardOpacity.toDouble())
+    putOpt("mapLook", look.mapLook)
+    put("barStyle", look.barStyle.stored)
+    put("carColor", look.carColor)
+}
+
+/** Lo guardado por [putLook]; null si el tema no se conoce. Lanza [JSONException] si falta algo. */
+internal fun JSONObject.look(): DesignLook? = DesignLook(
+    theme = ThemeMode.fromStored(getString("theme")) ?: return null,
+    accent = optIntOrNull("accent"),
+    cards = optIntOrNull("cards"),
+    cardStyle = CardStyle.fromStored(getString("cardStyle")),
+    cardOpacity = getDouble("cardOpacity").toFloat(),
+    mapLook = optStringOrNull("mapLook"),
+    barStyle = BarStyle.fromStored(getString("barStyle")),
+    carColor = getInt("carColor"),
+)
+
+/** Una página como estaba, con las claves de siempre de «Deshacer». */
+internal fun JSONObject.putPage(page: PageSnapshot) {
+    put("page", page.page)
+    put("grid", page.grid.key)
+    put("layout", page.layout)
+    put("background", page.background.stored)
+    putOpt("template", page.template?.name)
+}
+
+/** Lo guardado por [putPage]; null si la cuadrícula no se entiende. Lanza [JSONException] si falta algo. */
+internal fun JSONObject.page(): PageSnapshot? = PageSnapshot(
+    page = getInt("page"),
+    grid = PageSnapshot.grid(getString("grid")) ?: return null,
+    layout = getString("layout"),
+    background = PageBackground.fromStored(getString("background")),
+    template = optStringOrNull("template")?.let { n -> Template.entries.firstOrNull { it.name == n } },
+)
+
+/**
+ * El aviso «Diseño aplicado · Deshacer» del inicio: qué Diseño (uno de fábrica, [design], o el nombre de uno tuyo,
+ * [own]) y cuántas veces se ha pedido (cada una dura 10 s).
+ */
 object DesignNotice {
     var design by mutableStateOf<Design?>(null)
+        private set
+    var own by mutableStateOf<String?>(null)
+        private set
     var shown by mutableIntStateOf(0)
         private set
 
+    val active get() = design != null || own != null
+
     fun show(d: Design?) {
         design = d
+        own = null
         shown++
+    }
+
+    /** Se aplicó el Diseño tuyo de nombre [name]. */
+    fun showOwn(name: String) {
+        design = null
+        own = name
+        shown++
+    }
+
+    /** Ya no se muestra (pasó su tiempo, o la bienvenida, que no lo usa). */
+    fun hide() {
+        design = null
+        own = null
     }
 }
 
@@ -258,7 +296,7 @@ object DesignNotice {
  * Cada aplicar o deshacer cuenta: lo que un Diseño sigue haciendo en segundo plano (copiar y bajar su fondo) se detiene
  * si después se aplicó otro o se deshizo.
  */
-private var designTurn = 0
+internal var designTurn = 0
 
 /**
  * Aplica [design] a la página que se ve (no toca las demás) y a lo de toda la app, de una vez, y deja listo «Deshacer».

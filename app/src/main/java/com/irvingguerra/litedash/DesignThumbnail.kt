@@ -36,6 +36,7 @@ import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.themeColors
 import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.dashboard.Grid
+import com.irvingguerra.litedash.feature.dashboard.PageBackground
 import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.car.SEDAN_ASPECT
@@ -69,15 +70,28 @@ internal class DesignColors(val ui: Colors, val base: Color, val glowA: Color, v
 
     companion object {
         fun of(d: Design): DesignColors {
-            val dark = d.theme != ThemeMode.LIGHT
-            val ui = themeColors(dark, d.accent, d.cardColor)
-            val (base, a, b) = HAZE[d.id] ?: Triple(ui.background, ui.surface, ui.background)
             val map = MapLook(style = d.mapStyle, palette = d.mapPalette, custom = d.mapColor)
-                .colors(dark, (d.cardColor ?: d.accent)?.toArgb()?.and(0xFFFFFF))
-            val glass = d.cardStyle == CardStyle.GLASS
+            return of(d.theme, d.accent, d.cardColor, d.cardStyle, d.cardOpacity, map, d.carColor, HAZE[d.id])
+        }
+
+        /** Los de un Diseño tuyo: lo que guardó de toda la app (sin haz propio: sin foto, el fondo del tema). */
+        fun of(l: DesignLook): DesignColors = of(
+            l.theme, l.accent?.let { Color(it) }, l.cards?.let { Color(it) }, l.cardStyle, l.cardOpacity,
+            MapLook.parse(l.mapLook.orEmpty()), Color(l.carColor), haze = null,
+        )
+
+        private fun of(
+            theme: ThemeMode, accent: Color?, cards: Color?, cardStyle: CardStyle, cardOpacity: Float, mapLook: MapLook, car: Color,
+            haze: Triple<Color, Color, Color>?,
+        ): DesignColors {
+            val dark = theme != ThemeMode.LIGHT
+            val ui = themeColors(dark, accent, cards)
+            val (base, a, b) = haze ?: Triple(ui.background, ui.surface, ui.background)
+            val map = mapLook.colors(dark, (cards ?: accent)?.toArgb()?.and(0xFFFFFF))
+            val glass = cardStyle == CardStyle.GLASS
             // Lisa entera; de vidrio, según «Cuánto se ven» (casi cristal = poco relleno).
-            val fill = if (glass) 0.38f + 0.5f * (d.cardOpacity - MIN_OPACITY) / (1f - MIN_OPACITY) else 1f
-            return DesignColors(ui, base, a, b, map, d.carColor, glass, fill)
+            val fill = if (glass) 0.38f + 0.5f * (cardOpacity - MIN_OPACITY) / (1f - MIN_OPACITY) else 1f
+            return DesignColors(ui, base, a, b, map, car, glass, fill)
         }
 
         /** El haz de cada fondo de litedash.dev (base, luz de arriba a la izquierda, luz de abajo a la derecha). */
@@ -102,16 +116,35 @@ internal fun DesignThumbnail(design: Design, grid: Grid, dashboard: DashboardSta
     val off = TileSpecs.map { it.type }.filter(dashboard.hidden)
     val tiles = remember(design, grid, off) { design.template.tiles(grid, skip = { it in off }) }
     val colors = remember(design) { DesignColors.of(design) }
-    val text = rememberTextMeasurer()
     // Su foto de verdad (la miniatura del sitio, 1–7 KB, se baja una vez); sin internet, el haz de sus colores.
     val context = LocalContext.current
     val photo by produceState<ImageBitmap?>(null, design.wallpaper) {
         value = design.wallpaper?.let { wallpaperThumb(context, currentWallpaper(it)) }
     }
+    Thumbnail(grid, tiles, colors, photo, design.template.mapBackground, modifier)
+}
+
+/**
+ * La miniatura de un Diseño tuyo en esta pantalla: su acomodo como quedaría aquí ([DashboardState.fitted]), sus colores
+ * y su foto (la copia que guardó).
+ */
+@Composable
+internal fun MyDesignThumbnail(mine: MyDesign, grid: Grid, dashboard: DashboardState, modifier: Modifier = Modifier) {
+    val off = TileSpecs.map { it.type }.filter(dashboard.hidden)
+    val tiles = remember(mine.page, grid, off) { dashboard.fitted(mine.page).filterNot { it.type in off } }
+    val colors = remember(mine.look) { DesignColors.of(mine.look) }
+    val context = LocalContext.current
+    val photo by produceState<ImageBitmap?>(null, mine.id, mine.image) { value = if (mine.image) designThumb(context, mine.id) else null }
+    Thumbnail(grid, tiles, colors, photo, mine.page.background == PageBackground.MAP, modifier)
+}
+
+/** El lienzo de una miniatura: el fondo ([photo]; sin ella, el haz de [k]; [onMap] = el mapa) y cada widget de [tiles]. */
+@Composable
+private fun Thumbnail(grid: Grid, tiles: List<Tile>, k: DesignColors, photo: ImageBitmap?, onMap: Boolean, modifier: Modifier) {
+    val text = rememberTextMeasurer()
     Canvas(modifier.fillMaxWidth().aspectRatio(grid.columns.toFloat() / grid.rows).clip(RoundedCornerShape(Radius.inner))) {
-        val k = colors
         val image = photo
-        if (design.template.mapBackground) drawMap(Rect(Offset.Zero, size), k, route = true)
+        if (onMap) drawMap(Rect(Offset.Zero, size), k, route = true)
         else if (image != null) {
             // Cubre la miniatura sin deformarse, con el velo leve que lleva el fondo en el inicio.
             val s = maxOf(size.width / image.width, size.height / image.height)
@@ -133,7 +166,7 @@ internal fun DesignThumbnail(design: Design, grid: Grid, dashboard: DashboardSta
         for (t in tiles) {
             val r = Rect(t.col * cw + gap, t.row * ch + gap, (t.col + t.width) * cw - gap, (t.row + t.height) * ch - gap)
             val card = !t.plain && !t.cardless
-            if (card) drawCard(r, k, onMap = design.template.mapBackground)
+            if (card) drawCard(r, k, onMap)
             drawWidget(t, r, k, text)
         }
     }

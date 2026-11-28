@@ -185,6 +185,30 @@ class DashboardState(private val store: DashboardStore) {
     /** La página que se ve tal como está ([restore] la regresa así): su acomodo en esta cuadrícula, su fondo y su plantilla. */
     fun snapshot(): PageSnapshot? = grid?.let { PageSnapshot(page, it, formatLayout(tiles), background, store.template(page)) }
 
+    /**
+     * El acomodo guardado [s] (el de un Diseño tuyo) como queda en la cuadrícula de ahora: en la misma, tal cual; en una
+     * de la misma orientación, estirado en proporción; en la otra orientación (se guardó acostada y ahora va de pie),
+     * el de su plantilla si tenía (estirar ahí deja widgets aplastados). Siempre ajustado con [adaptTo].
+     */
+    fun fitted(s: PageSnapshot): List<Tile> {
+        val c = grid ?: return emptyList()
+        val template = s.template?.takeIf { c.vertical != s.grid.vertical }
+        val placed = when {
+            template != null -> fromTemplate(c, template)
+            c == s.grid -> parseLayout(s.layout)
+            else -> parseLayout(s.layout).map { it.scaledTo(s.grid, c) }
+        }
+        return placed.fittedTo(c)
+    }
+
+    /** Pone en la página que se ve el acomodo guardado [s] ([fitted]), con su fondo y su plantilla. */
+    fun place(s: PageSnapshot) {
+        if (grid == null) return
+        change(fitted(s))
+        store.setTemplate(page, s.template)
+        if (background != s.background) setBackground(page, s.background)
+    }
+
     /** Regresa la página de [s] como estaba (su acomodo en esa cuadrícula, su fondo y su plantilla). */
     fun restore(s: PageSnapshot) {
         if (s.page !in 0 until pageCount) return

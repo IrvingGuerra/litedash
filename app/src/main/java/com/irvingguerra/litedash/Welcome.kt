@@ -250,7 +250,7 @@ private fun DesignStep(d: Dependencies, modifier: Modifier) {
                     if (d.prefs.design != design.id) {
                         // Instalación nueva: el tema del Diseño tal cual (aquí se van probando varios).
                         applyDesign(d, context, scope, design, dark = design.theme == ThemeMode.DARK, keepSun = false)
-                        DesignNotice.design = null
+                        DesignNotice.hide()
                     }
                 }
             }

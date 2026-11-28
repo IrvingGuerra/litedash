@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -27,11 +28,16 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
@@ -40,10 +46,12 @@ import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Icon
+import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
+import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.dashboard.Grid
@@ -71,6 +79,15 @@ fun DesignsPanel(d: Dependencies, close: () -> Unit, onCustomize: () -> Unit) {
     val undo = designUndo(d)
     val alerts = LocalAlerts.current
     val res = LocalResources.current
+    val mine = prefs.mine
+    // Lo que se está escribiendo: el nombre de uno nuevo ([NEW]) o el de uno tuyo (su id); null = nada.
+    var naming by remember { mutableStateOf<String?>(null) }
+    var typed by remember { mutableStateOf("") }
+    fun named(id: String) {
+        val name = designName(typed)
+        if (name != null) if (id == NEW) saveMyDesign(d, context, scope, name) else renameMyDesign(prefs, id, name)
+        naming = null
+    }
     PanelScaffold(stringResource(R.string.designs), close) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Label(stringResource(R.string.designs_help), Typography.body, c.textMuted)
@@ -84,6 +101,7 @@ fun DesignsPanel(d: Dependencies, close: () -> Unit, onCustomize: () -> Unit) {
                 val gap = 16.dp
                 // Un pelo menos: con el ancho justo, el redondeo a pixeles mandaba al último al renglón de abajo.
                 val width = ((maxWidth - gap * (columns - 1)) / columns - 1.dp).coerceAtMost(CARD_MOST)
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(gap), maxItemsInEachRow = columns) {
                     for (design in DESIGNS) {
                         val applied = design == current
@@ -98,6 +116,47 @@ fun DesignsPanel(d: Dependencies, close: () -> Unit, onCustomize: () -> Unit) {
                             )
                         }
                     }
+                }
+                // Los tuyos: tu inicio guardado con nombre. Al final, la tarjeta para guardar el de ahora.
+                Label(stringResource(R.string.designs_yours), Typography.label, c.textMuted)
+                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(gap), maxItemsInEachRow = columns) {
+                    for (own in mine) {
+                        val applied = own.id == prefs.design
+                        MyDesignCard(
+                            own, grid, d.dashboard, applied, changed = applied && !own.matches(prefs.look, ownCar), Modifier.width(width),
+                            typed = typed.takeIf { naming == own.id }, onType = { typed = it.take(MY_DESIGN_NAME_MAX) }, onNamed = { named(own.id) },
+                            onRename = {
+                                typed = own.name
+                                naming = own.id
+                            },
+                            onDelete = {
+                                alerts.ask(
+                                    Alert(
+                                        res.getString(R.string.design_delete_title, own.name),
+                                        res.getString(R.string.confirm_delete),
+                                        res.getString(R.string.design_delete_message),
+                                    ) { deleteMyDesign(prefs, context, scope, own.id) },
+                                )
+                            },
+                        ) {
+                            alerts.ask(
+                                Alert(
+                                    res.getString(R.string.design_apply_title, own.name),
+                                    res.getString(R.string.design_apply),
+                                    res.getString(R.string.design_apply_message),
+                                    destructive = false,
+                                ) { applyMyDesign(d, context, scope, own) },
+                            )
+                        }
+                    }
+                    SaveMineCard(
+                        grid, Modifier.width(width), typed = typed.takeIf { naming == NEW }, onType = { typed = it.take(MY_DESIGN_NAME_MAX) },
+                        onNamed = { named(NEW) }, onCancel = { naming = null },
+                    ) {
+                        typed = res.getString(R.string.design_mine_name, mine.size + 1)
+                        naming = NEW
+                    }
+                }
                 }
             }
             Spacer(Modifier.height(4.dp))
@@ -167,6 +226,86 @@ internal fun DesignCard(
     }
 }
 
+/** En [DesignsPanel], lo que se escribe es el nombre de un Diseño nuevo (no el de uno ya guardado). */
+private const val NEW = "new"
+
+/**
+ * La tarjeta de un Diseño tuyo: su miniatura, su nombre (con la palomita si es el puesto) y, a la derecha, cambiarle el
+ * nombre y eliminarlo. Con [typed] (se le está cambiando el nombre), el campo en vez del renglón.
+ */
+@Composable
+private fun MyDesignCard(
+    mine: MyDesign,
+    grid: Grid,
+    dashboard: DashboardState,
+    applied: Boolean,
+    changed: Boolean,
+    modifier: Modifier,
+    typed: String?,
+    onType: (String) -> Unit,
+    onNamed: () -> Unit,
+    onRename: () -> Unit,
+    onDelete: () -> Unit,
+    apply: () -> Unit,
+) {
+    val c = LocalColors.current
+    val shape = RoundedCornerShape(Radius.card)
+    Card(modifier.border(if (applied) 3.dp else 0.dp, if (applied) c.accent else Color.Transparent, shape), onClick = apply) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            MyDesignThumbnail(mine, grid, dashboard)
+            if (typed != null) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextInput(typed, onType, stringResource(R.string.name), Modifier.weight(1f).then(focusedAtOnce()), compact = true, onDone = onNamed)
+                IconButton(Icons.done, onNamed, size = NAME_BUTTON, color = c.accent)
+            } else Row(verticalAlignment = Alignment.CenterVertically) {
+                Label(mine.name, Typography.subtitle, maxLines = 1, modifier = Modifier.weight(1f))
+                if (applied) Icon(Icons.done, c.accent, 22.dp)
+                IconButton(Icons.edit, onRename, size = NAME_BUTTON, color = c.textMuted)
+                IconButton(Icons.trash, onDelete, size = NAME_BUTTON, color = c.textMuted)
+            }
+            if (changed) Label(stringResource(R.string.design_with_changes), Typography.small, c.textMuted, maxLines = 1)
+        }
+    }
+}
+
+/** Para el campo del nombre: toma el cursor al aparecer (se tocó «cambiar nombre» o «guardar» para escribir). */
+@Composable
+private fun focusedAtOnce(): Modifier {
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focus.requestFocus() }
+    return Modifier.focusRequester(focus)
+}
+
+/** Los botones junto al nombre de un Diseño tuyo (lápiz, bote y la palomita de «listo»). */
+private val NAME_BUTTON = 44.dp
+
+/**
+ * La última tarjeta de «Tuyos»: guarda tu inicio de ahora como un Diseño. Un toque pide su nombre ([typed]) ahí mismo,
+ * con «Guardar» y «Cancelar».
+ */
+@Composable
+private fun SaveMineCard(grid: Grid, modifier: Modifier, typed: String?, onType: (String) -> Unit, onNamed: () -> Unit, onCancel: () -> Unit, start: () -> Unit) {
+    val c = LocalColors.current
+    Card(modifier, onClick = if (typed == null) start else null) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (typed == null) {
+                Box(
+                    Modifier.fillMaxWidth().aspectRatio(grid.columns.toFloat() / grid.rows).clip(RoundedCornerShape(Radius.inner)).border(1.dp, c.line, RoundedCornerShape(Radius.inner)),
+                    contentAlignment = Alignment.Center,
+                ) { Icon(Icons.plus, c.textMuted, 40.dp) }
+                Label(stringResource(R.string.design_save_mine), Typography.subtitle, maxLines = 1)
+                Label(stringResource(R.string.design_save_mine_help), Typography.small, c.textMuted, maxLines = 3)
+            } else {
+                Label(stringResource(R.string.design_save_mine), Typography.subtitle, maxLines = 1)
+                TextInput(typed, onType, stringResource(R.string.name), Modifier.fillMaxWidth().then(focusedAtOnce()), compact = true, onDone = onNamed)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(stringResource(R.string.cancel), onCancel, Modifier.weight(1f))
+                    Button(stringResource(R.string.design_save), onNamed, Modifier.weight(1f), primary = true, enabled = designName(typed) != null)
+                }
+            }
+        }
+    }
+}
+
 /** El margen de una tarjeta [DesignCard] breve (la bienvenida mide con él cuántas caben). */
 internal val BRIEF_PADDING = 8.dp
 
@@ -175,13 +314,16 @@ internal val BRIEF_PADDING = 8.dp
 internal fun DesignSettingsCard(d: Dependencies, onDesigns: () -> Unit) {
     val c = LocalColors.current
     val current = designOf(d.prefs.design)
+    val own = if (current == null) d.prefs.mine.firstOrNull { it.id == d.prefs.design } else null
     val grid = d.dashboard.grid
     SettingsCard(stringResource(R.string.design_title), stringResource(R.string.designs_help)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             if (current != null && grid != null) DesignThumbnail(current, grid, d.dashboard, Modifier.width(160.dp))
+            if (own != null && grid != null) MyDesignThumbnail(own, grid, d.dashboard, Modifier.width(160.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Label(current?.let { stringResource(it.name) } ?: stringResource(R.string.design_none), Typography.subtitle, maxLines = 1)
-                if (current != null && !current.matches(d.prefs.look, !d.prefs.carModel.isNullOrEmpty())) {
+                Label(current?.let { stringResource(it.name) } ?: own?.name ?: stringResource(R.string.design_none), Typography.subtitle, maxLines = 1)
+                val ownCar = !d.prefs.carModel.isNullOrEmpty()
+                if (current?.matches(d.prefs.look, ownCar) == false || own?.matches(d.prefs.look, ownCar) == false) {
                     Label(stringResource(R.string.design_with_changes), Typography.small, c.textMuted, maxLines = 2)
                 }
             }
@@ -196,15 +338,15 @@ private const val NOTICE_MS = 10_000L
 /** Recién aplicado un Diseño: el aviso con «Deshacer» arriba del inicio, 10 s (con los demás avisos flotantes). */
 @Composable
 internal fun DesignAppliedNotice(d: Dependencies) {
-    val design = DesignNotice.design ?: return
+    val name = DesignNotice.design?.let { stringResource(it.name) } ?: DesignNotice.own ?: return
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     LaunchedEffect(DesignNotice.shown) {
         delay(NOTICE_MS)
-        DesignNotice.design = null
+        DesignNotice.hide()
     }
     if (designUndo(d) == null) return
-    Notice(stringResource(R.string.design_applied, stringResource(design.name)), Icons.done) {
+    Notice(stringResource(R.string.design_applied, name), Icons.done) {
         Button(stringResource(R.string.design_undo), { undoDesign(d, context, scope) }, primary = true)
     }
 }

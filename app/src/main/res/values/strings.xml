@@ -172,6 +172,13 @@
     <string name="design_neon_tagline">De noche, con resplandor.</string>
     <string name="design_emerald">Esmeralda</string>
     <string name="design_emerald_tagline">Aurora de noche, niebla de día.</string>
+    <string name="designs_yours">Tuyos</string>
+    <string name="design_save_mine">Guardar mi inicio</string>
+    <string name="design_save_mine_help">Guarda esta página, tus colores y tu fondo como un Diseño tuyo.</string>
+    <string name="design_mine_name">Mi Diseño %1$d</string>
+    <string name="design_save">Guardar</string>
+    <string name="design_delete_title">¿Eliminar el diseño %1$s?</string>
+    <string name="design_delete_message">Se quita de tus Diseños. Tu inicio de ahora no cambia.</string>
     <string name="add">Agregar</string>
     <string name="add_tile">Agregar al inicio</string>
     <string name="add_widget">Agregar widget</string>

@@ -602,7 +602,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     }
     // Un Diseño recién aplicado (también desde «Diseños» al acomodar): se sale de acomodar, así al cerrar el panel sale
     // su aviso con «Deshacer» (acomodando no hay avisos).
-    LaunchedEffect(DesignNotice.shown) { if (DesignNotice.design != null) editing = false }
+    LaunchedEffect(DesignNotice.shown) { if (DesignNotice.active) editing = false }
     // A dónde lleva «atrás» (y cerrar) desde [p]: elegir la app o el dato, a quien lo pidió; lo demás, al inicio.
     fun backOf(p: Panel?): Panel? = when (p) {
         is Panel.PickApp -> p.back

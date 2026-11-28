@@ -49,6 +49,7 @@ internal object PrefKeys {
     const val DESIGN = "design"
     const val DESIGN_UNDO = "design_undo"
     const val DESIGN_WALLPAPER = "design_wallpaper"
+    const val MY_DESIGNS = "my_designs"
     const val WELCOME_SEEN = "welcome_seen"
     const val WELCOME_STEP = "welcome_step"
     const val DONT_ASK_HOME = "dont_ask_home"
@@ -514,6 +515,9 @@ class Preferences(context: Context) {
 
     /** El fondo de LiteDash de un Diseño que espera internet para bajarse (solo una vez); null = ninguno. */
     var designWallpaper by string(PrefKeys.DESIGN_WALLPAPER)
+
+    /** Los Diseños que guardaste ([MyDesign], en JSON); null = ninguno. */
+    var myDesigns by string(PrefKeys.MY_DESIGNS)
 
     var welcomeSeen by bool(PrefKeys.WELCOME_SEEN, false)
 
