@@ -18,7 +18,7 @@ internal fun MediaController.busy(): Boolean = when (playbackState?.state) {
 /**
  * Los extras de un aviso como mapa (un extra que no se puede leer deja el mapa vacío). Los objetos del AVRCP de
  * Android se pasan a valores simples para que [BroadcastMeta.parse] no dependa de Android: [MediaMetadata] → mapa de
- * sus textos ([BroadcastMeta.METADATA_KEYS]) y [PlaybackState] → su estado (Int).
+ * sus textos ([AndroidAvrcpBluetooth.METADATA_KEYS]) y [PlaybackState] → su estado (Int).
  */
 @Suppress("DEPRECATION") // Bundle.get: los avisos traen tipos variados
 internal fun Bundle?.toMap(): Map<String, Any?> {
@@ -26,7 +26,7 @@ internal fun Bundle?.toMap(): Map<String, Any?> {
     return runCatching {
         b.keySet().associateWith {
             when (val v = b.get(it)) {
-                is MediaMetadata -> BroadcastMeta.METADATA_KEYS.associateWith { k -> v.getString(k) }
+                is MediaMetadata -> AndroidAvrcpBluetooth.METADATA_KEYS.associateWith { k -> v.getString(k) }
                 is PlaybackState -> v.state
                 else -> v
             }

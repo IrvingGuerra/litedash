@@ -55,4 +55,22 @@ class FactoryBluetoothTest {
         assertEquals("com.tw.bt", bluetoothAppOf(null, null, "com.tw.bt"))
         assertNull(bluetoothAppOf(null, null, null))
     }
+
+    @Test
+    fun recipesOfEveryFamilyAreTheOnesOfTheEnumBeforeP2() {
+        // Fijado antes de pasar las recetas propias de TopWay y FYT del enum HeadUnit al perfil (P2): ids y orden de la
+        // 1.5.26 (van en estadísticas y en el catálogo; FactoryAudio.countedRecipe los usa).
+        val base = listOf(Recipes.PLAIN, Recipes.OPEN_FACTORY)
+        val own = mapOf(HeadUnit.TOPWAY to listOf(Recipes.TW_SOURCE8), HeadUnit.FYT to listOf(Recipes.FYT_TOGGLE))
+        for (family in HeadUnit.entries) assertEquals(family.name, own[family].orEmpty() + base, family.bluetoothRecipes)
+        for (kind in FactoryBluetoothKind.all + GenericBluetooth) assertEquals(kind.id, own[kind.family].orEmpty() + base, kind.recipes)
+    }
+
+    @Test
+    fun everyBroadcastAProfileReadsIsListenedTo() {
+        // Lo que lee un perfil con sus claves debe estar en los avisos que escucha el receptor (y no repetirse entre perfiles).
+        val read = FactoryBluetoothKind.withBroadcasts.flatMap { it.broadcasts }
+        assertEquals(read.distinct(), read)
+        for (action in read) assertEquals(action, true, action in BroadcastMeta.ACTIONS)
+    }
 }

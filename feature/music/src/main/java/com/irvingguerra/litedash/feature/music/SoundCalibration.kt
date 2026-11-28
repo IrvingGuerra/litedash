@@ -250,7 +250,7 @@ internal abstract class BluetoothRecipe(val id: String) {
     open fun renew() = sourceTaken()
 }
 
-/** Las recetas de Bluetooth por id (el orden lo pone la familia: [HeadUnit.bluetoothRecipes]). */
+/** Las recetas de Bluetooth por id (el orden lo pone el perfil: [FactoryBluetoothKind.recipes]). */
 internal fun bluetoothRecipes(host: SoundHost): Map<String, BluetoothRecipe> =
     listOf(object : BluetoothRecipe(Recipes.PLAIN) {}, TopWaySource8(host), FytToggle(host), OpenFactory(host)).associateBy { it.id }
 

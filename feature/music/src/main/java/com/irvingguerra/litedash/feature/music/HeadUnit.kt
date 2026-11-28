@@ -4,9 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 
 /**
- * La familia de la pantalla (quién hizo su firmware), con lo de audio que es de esa marca: sus apps de
- * Bluetooth y, en orden, las recetas para que el Bluetooth suene ([bluetoothRecipes]; la calibración las
- * prueba de la primera a la última). Se reconoce por los paquetes del sistema instalados, nunca por el
+ * La familia de la pantalla (quién hizo su firmware), con lo de audio que es de esa marca. Se reconoce por los paquetes del sistema instalados, nunca por el
  * nombre del modelo. [GENERIC] = Bluetooth de Android sin chip propio (la mayoría): no lleva recetas.
  * Lo de la radio de fábrica de cada marca vive en su perfil ([FactoryRadio]) y cómo se reconoce y se abre, en
  * [FactoryRadioKind] ([factoryRadios]); sus apps de Bluetooth, en los perfiles [FactoryBluetoothKind]; las listas de avisos de la canción, en [BroadcastMeta]. El motor de la música no
@@ -19,11 +17,9 @@ internal enum class HeadUnit(
      * Irving, 2026-11-13). La calibración no pregunta en cada receta, solo en la última.
      */
     val trustsSignal: Boolean = false,
-    /** Recetas propias, entre "sin hacer nada" y abrir la app de fábrica (que van en todas). */
-    own: List<String> = emptyList(),
 ) {
-    TOPWAY("topway", trustsSignal = true, own = listOf(Recipes.TW_SOURCE8)),
-    FYT("fyt", trustsSignal = true, own = listOf(Recipes.FYT_TOGGLE)),
+    TOPWAY("topway", trustsSignal = true),
+    FYT("fyt", trustsSignal = true),
     MICRONTEK("microntek"),
     NWD("nwd"),
     HCN("hcn"),
@@ -34,12 +30,8 @@ internal enum class HeadUnit(
     GENERIC("generic"),
     ;
 
-    /**
-     * Primero lo de la marca (inocuo si no hace falta y es lo que se hacía antes de calibrar: así "sin hacer nada"
-     * no queda guardado por casualidad cuando otra app ya había pedido la fuente), luego no hacer nada y al final
-     * abrir su app.
-     */
-    val bluetoothRecipes: List<String> = own + Recipes.PLAIN + Recipes.OPEN_FACTORY
+    /** Las recetas de Bluetooth de esta familia, en orden: las de su perfil ([FactoryBluetoothKind.recipes]). */
+    val bluetoothRecipes: List<String> get() = FactoryBluetoothKind.forFamily(this).recipes
 
     companion object {
         /** Las apps de Bluetooth de TopWay y de FYT que tocan la música (sus recetas hablan con ellas). */
@@ -72,11 +64,14 @@ internal enum class HeadUnit(
         /** La app de Bluetooth de marca instalada que toca la música (criterio de [of]); null si no hay. Bloquea. */
         fun bluetoothMusicApp(context: Context): String? = bluetoothMusicApps.firstOrNull(context::hasPackage)
 
+        // Perezosas: los perfiles de Bluetooth nombran a HeadUnit al crearse; si al iniciarse HeadUnit leyera la lista de los
+        // perfiles, el que llegara primero (un aviso, la calibración) vería la lista a medias (ProfileInitOrderTest).
+
         /** Todas las apps de Bluetooth de marca, en orden de prioridad (para la familia en reportes y estadísticas). */
-        val bluetoothApps: List<String> = BRAND_BLUETOOTH.map { it.pkg }
+        val bluetoothApps: List<String> by lazy { BRAND_BLUETOOTH.map { it.pkg } }
 
         /** Las que tocan la música del celular (las demás son servicios): la fuente Bluetooth sin app enlazada. */
-        val bluetoothMusicApps: List<String> = BRAND_BLUETOOTH.filter { it.music }.map { it.pkg }
+        val bluetoothMusicApps: List<String> by lazy { BRAND_BLUETOOTH.filter { it.music }.map { it.pkg } }
 
         /** Las radios de fábrica con perfil, en el orden en que se prueban; si hay varias, gana la primera. */
         val factoryRadios: List<FactoryRadioKind> = listOf(HcnKind, NwdKind, TopWayKind)

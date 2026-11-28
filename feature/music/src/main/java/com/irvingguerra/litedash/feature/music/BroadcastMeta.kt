@@ -1,8 +1,5 @@
 package com.irvingguerra.litedash.feature.music
 
-import android.media.MediaMetadata
-import android.media.session.PlaybackState
-
 /**
  * Lo que suena según un aviso (broadcast) de otra app: las de Bluetooth de muchas pantallas
  * chinas no publican sesión de medios pero sí avisan la canción así. Campos null = el aviso no
@@ -30,26 +27,7 @@ data class BroadcastMeta(
     }
 
     companion object {
-        // Bluetooth Autochips (AC8227L y otras) y el widget multimedia Clinkway ("com.clw").
-        private const val AVRCP = "com.autochips.bluetooth.avrcpct.AvrcpCtPlayerUtility."
-        private const val AVRCP_MEDIA = AVRCP + "action.ACTION_MEDIA_DATA_UPDATE"
-        private const val AVRCP_PLAYBACK = AVRCP + "action.ACTION_PLAYBACK_DATA_UPDATE"
-        private const val CLW_INFO = "com.clw.intent.MEDIA_INFO"
-        private const val CLW_STATE = "com.clw.intent.MEDIA_PLAY_STATE"
-        /** Clinkway: `Media_Type` 3 = Bluetooth. */
-        private const val CLW_BLUETOOTH = 3
         private const val POWERAMP = "com.maxmpz.audioplayer"
-        // AVRCP de Android (5–8): manda MediaMetadata y PlaybackState, no textos (idea de AvrcpMeta de StradaOS, GPL-3.0).
-        private const val AVRCP_ANDROID = "android.bluetooth.avrcp-controller.profile."
-        private const val TRACK_EVENT = AVRCP_ANDROID + "action.TRACK_EVENT"
-        private const val EXTRA_METADATA = AVRCP_ANDROID + "extra.METADATA"
-        private const val EXTRA_PLAYBACK = AVRCP_ANDROID + "extra.PLAYBACK"
-        private val TITLE_KEYS = arrayOf(MediaMetadata.METADATA_KEY_TITLE, MediaMetadata.METADATA_KEY_DISPLAY_TITLE)
-        private val ARTIST_KEYS = arrayOf(
-            MediaMetadata.METADATA_KEY_ARTIST, MediaMetadata.METADATA_KEY_ALBUM_ARTIST, MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE,
-        )
-        /** Los textos de un MediaMetadata que se copian al leer el aviso (ver `toMap`). */
-        val METADATA_KEYS = (TITLE_KEYS + ARTIST_KEYS).toList()
 
         /** Avisos conocidos (lista de StradaOS, GPL-3.0): reproductores comunes y apps BT de pantallas. */
         val ACTIONS = listOf(
@@ -69,7 +47,7 @@ data class BroadcastMeta(
             "com.samsung.sec.android.MusicPlayer.metachanged", "com.nullsoft.winamp.metachanged",
             "org.videolan.vlc.metachanged",
             // Bluetooth (AVRCP) de Android y de pantallas chinas
-            TRACK_EVENT,
+            AndroidAvrcpBluetooth.TRACK_EVENT,
             "com.android.bluetooth.a2dpsink.action.METADATA_CHANGED",
             "com.android.music.bluetooth.metachanged",
             "com.microntek.music.report", "com.microntek.bt.report",
@@ -78,61 +56,22 @@ data class BroadcastMeta(
             "com.ts.bt.music.info", "com.fyt.bt.music.id3",
             "com.autochips.bluetooth.MUSIC_INFO", "com.autochips.bt.music.id3",
             "com.nwd.action.ACTION_BT_MUSIC_ID3",
-            AVRCP_MEDIA, AVRCP_PLAYBACK, CLW_INFO, CLW_STATE,
+            AutochipsBluetooth.MEDIA, AutochipsBluetooth.PLAYBACK, ClinkwayBluetooth.INFO, ClinkwayBluetooth.STATE,
         )
 
         /** Lee un aviso; null si no dice nada útil (ni canción ni estado). */
         fun parse(action: String, extras: Map<String, Any?>): BroadcastMeta? {
-            // Si alguna ROM lo manda con textos, sigue la lectura genérica.
-            if (action == TRACK_EVENT) trackEvent(extras)?.let { return it }
-            val meta = when (action) {
-                AVRCP_MEDIA -> BroadcastMeta(
-                    title = extras.text(AVRCP + "extra.MEDIA_TITLE"),
-                    artist = extras.text(AVRCP + "extra.MEDIA_ARTIST"),
-                    // "MEIDA" con la errata de la app de Autochips.
-                    playing = null, pkg = null, bluetooth = true,
-                )
-                AVRCP_PLAYBACK -> BroadcastMeta(
-                    title = null, artist = null,
-                    playing = (extras[AVRCP + "extra.PLAYBACK_STATUS"] as? Number)?.let { it.toInt() == 1 },
-                    pkg = null, bluetooth = true,
-                )
-                CLW_INFO, CLW_STATE -> {
-                    val info = action == CLW_INFO
-                    BroadcastMeta(
-                        title = if (info) extras.text("Media_Title") else null,
-                        artist = if (info) extras.text("Media_Artist") else null,
-                        playing = if (info) null else flag(extras["Play_State"]),
-                        pkg = null,
-                        bluetooth = (extras["Media_Type"] as? Number)?.toInt() == CLW_BLUETOOTH,
-                    )
-                }
-                // Poweramp (PowerampAPI, build 948+): la canción en `title`/`artist` sueltos (además del Bundle `track`) y el
-                // estado como `paused`; no dice su paquete.
-                else -> BroadcastMeta(
-                    title = extras.text("track", "title", "song", "name", "id3_title", "music_title", "TITLE"),
-                    artist = extras.text("artist", "singer", "id3_artist", "music_artist", "ARTIST"),
-                    playing = sequenceOf("playing", "isPlaying", "playstate").firstNotNullOfOrNull { flag(extras[it]) }
-                        ?: (extras["paused"] as? Boolean)?.not(),
-                    pkg = extras.text("package", "packageName", "pkg") ?: POWERAMP.takeIf { action.startsWith("$it.") },
-                    bluetooth = isBluetooth(action),
-                )
-            }
-            return meta.takeIf { it.title != null || it.artist != null || it.playing != null }
-        }
-
-        /** TRACK_EVENT con los objetos ya pasados a mapa (canción) y número (estado); cada aviso puede traer uno solo. */
-        private fun trackEvent(extras: Map<String, Any?>): BroadcastMeta? {
-            @Suppress("UNCHECKED_CAST")
-            val song = extras[EXTRA_METADATA] as? Map<String, Any?>
-            val playing = when (extras[EXTRA_PLAYBACK] as? Int) {
-                PlaybackState.STATE_PLAYING -> true
-                PlaybackState.STATE_PAUSED, PlaybackState.STATE_STOPPED -> false
-                else -> null
-            }
-            val meta = BroadcastMeta(
-                title = song?.text(*TITLE_KEYS), artist = song?.text(*ARTIST_KEYS),
-                playing = playing, pkg = null, bluetooth = true,
+            // Los avisos con claves propias los lee su perfil de Bluetooth; los demás (o si el perfil no halla nada suyo), con
+            // las claves de siempre.
+            // Poweramp (PowerampAPI, build 948+): la canción en `title`/`artist` sueltos (además del Bundle `track`) y el
+            // estado como `paused`; no dice su paquete.
+            val meta = FactoryBluetoothKind.readers[action]?.readBroadcast(action, extras) ?: BroadcastMeta(
+                title = extras.text("track", "title", "song", "name", "id3_title", "music_title", "TITLE"),
+                artist = extras.text("artist", "singer", "id3_artist", "music_artist", "ARTIST"),
+                playing = sequenceOf("playing", "isPlaying", "playstate").firstNotNullOfOrNull { playingFlag(extras[it]) }
+                    ?: (extras["paused"] as? Boolean)?.not(),
+                pkg = extras.text("package", "packageName", "pkg") ?: POWERAMP.takeIf { action.startsWith("$it.") },
+                bluetooth = isBluetooth(action),
             )
             return meta.takeIf { it.title != null || it.artist != null || it.playing != null }
         }
@@ -144,18 +83,18 @@ data class BroadcastMeta(
             val a = action.lowercase()
             return BLUETOOTH_WORDS.any { it in a }
         }
-
-        // Las apps mandan "Not Provided" o "unknown" cuando no saben.
-        private fun Map<String, Any?>.text(vararg keys: String): String? = keys.firstNotNullOfOrNull { k ->
-            (this[k] as? String)?.trim()?.takeIf { it.isNotEmpty() && !it.equals("Not Provided", true) && !it.equals("unknown", true) }
-        }
-
-        /** Sonando: true/false, 1 (o 3 = PlaybackState.STATE_PLAYING) o "playing"/"true"/"1". */
-        private fun flag(v: Any?): Boolean? = when (v) {
-            is Boolean -> v
-            is Number -> v.toInt().let { it == 1 || it == 3 }
-            is String -> v.equals("true", true) || v == "1" || v.equals("playing", true)
-            else -> null
-        }
     }
+}
+
+/** El primer texto de los extras de un aviso con alguna de [keys]; las apps mandan "Not Provided" o "unknown" cuando no saben. */
+internal fun Map<String, Any?>.text(vararg keys: String): String? = keys.firstNotNullOfOrNull { k ->
+    (this[k] as? String)?.trim()?.takeIf { it.isNotEmpty() && !it.equals("Not Provided", true) && !it.equals("unknown", true) }
+}
+
+/** Sonando: true/false, 1 (o 3 = PlaybackState.STATE_PLAYING) o "playing"/"true"/"1". */
+internal fun playingFlag(v: Any?): Boolean? = when (v) {
+    is Boolean -> v
+    is Number -> v.toInt().let { it == 1 || it == 3 }
+    is String -> v.equals("true", true) || v == "1" || v.equals("playing", true)
+    else -> null
 }
