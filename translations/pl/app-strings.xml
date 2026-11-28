@@ -135,14 +135,14 @@
     <string name="templates_wallpaper_help">Twoje zdjęcie w tle z kilkoma kartami i unoszącą się godziną. Tło wybierzesz podczas urządzania → Tapeta albo w Ustawienia → Ekran i wygląd → Ekran główny.</string>
     <string name="template_map_car">Mapa i auto</string>
     <string name="template_copilot">Pilot</string>
-    <string name="template_route">Trasa</string>
+    <string name="template_route">Mapa i prędkościomierz</string>
     <string name="template_music_radio">Muzyka i radio</string>
     <string name="template_vertical_map">Pionowo z mapą</string>
     <string name="template_map_background">Mapa w tle</string>
     <string name="templates_tab_map">Mapa</string>
     <string name="templates_map_help">Mapa na żywo z Twoją pozycją i następnym skrętem.</string>
     <string name="designs">Style</string>
-    <string name="designs_help">Jedno dotknięcie ustawia układ, tło, kolory, mapę i auto. Wszystkie za darmo; potem zmienisz, co zechcesz.</string>
+    <string name="designs_help">Każdy ustawia układ, tło, kolory, mapę i auto. Wszystkie za darmo; potem zmienisz, co chcesz.</string>
     <string name="design_title">Styl</string>
     <string name="design_none">Jeszcze żaden</string>
     <string name="design_change">Zmień</string>

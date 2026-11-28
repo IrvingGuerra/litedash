@@ -135,14 +135,14 @@
     <string name="templates_wallpaper_help">Foto latar Anda dengan beberapa kartu di atasnya dan jam yang melayang. Pilih latar di Atur beranda → Wallpaper atau di Setelan → Beranda &amp; tampilan → Beranda.</string>
     <string name="template_map_car">Peta dan mobil</string>
     <string name="template_copilot">Kopilot</string>
-    <string name="template_route">Rute</string>
+    <string name="template_route">Peta dan spidometer</string>
     <string name="template_music_radio">Musik dan radio</string>
     <string name="template_vertical_map">Potret dengan peta</string>
     <string name="template_map_background">Peta sebagai latar</string>
     <string name="templates_tab_map">Peta</string>
     <string name="templates_map_help">Peta langsung dengan posisi Anda dan belokan berikutnya.</string>
     <string name="designs">Desain</string>
-    <string name="designs_help">Sekali ketuk mengatur tata letak, latar, warna, peta, dan mobil. Semua gratis; ubah apa saja setelahnya.</string>
+    <string name="designs_help">Masing-masing mengatur tata letak, latar, warna, peta, dan mobil. Semua gratis; setelah itu ubah apa saja.</string>
     <string name="design_title">Desain</string>
     <string name="design_none">Belum ada</string>
     <string name="design_change">Ganti</string>

@@ -135,14 +135,14 @@
     <string name="templates_wallpaper_help">Η φωτογραφία φόντου σας με λίγες κάρτες από πάνω και την ώρα να αιωρείται. Το φόντο επιλέγεται κατά την οργάνωση → Ταπετσαρία ή στις Ρυθμίσεις → Αρχική και εμφάνιση → Αρχική.</string>
     <string name="template_map_car">Χάρτης και αυτοκίνητο</string>
     <string name="template_copilot">Συνοδηγός</string>
-    <string name="template_route">Διαδρομή</string>
+    <string name="template_route">Χάρτης και ταχύμετρο</string>
     <string name="template_music_radio">Μουσική και ραδιόφωνο</string>
     <string name="template_vertical_map">Κατακόρυφη με χάρτη</string>
     <string name="template_map_background">Χάρτης στο φόντο</string>
     <string name="templates_tab_map">Χάρτης</string>
     <string name="templates_map_help">Ο ζωντανός χάρτης με τη θέση σας και την επόμενη στροφή.</string>
     <string name="designs">Στυλ</string>
-    <string name="designs_help">Με ένα πάτημα ορίζετε διάταξη, φόντο, χρώματα, χάρτη και αυτοκίνητο. Όλα δωρεάν· μετά αλλάζετε ό,τι θέλετε.</string>
+    <string name="designs_help">Το καθένα βάζει διάταξη, φόντο, χρώματα, χάρτη και αυτοκίνητο. Όλα δωρεάν· μετά αλλάζεις ό,τι θέλεις.</string>
     <string name="design_title">Στυλ</string>
     <string name="design_none">Κανένα ακόμα</string>
     <string name="design_change">Αλλαγή</string>

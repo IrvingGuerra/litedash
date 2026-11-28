@@ -135,14 +135,14 @@
     <string name="templates_wallpaper_help">Fotografia de fundal cu câteva carduri deasupra și ora plutind. Fundalul se alege când aranjezi → Imagine de fundal sau în Setări → Acasă și aspect → Acasă.</string>
     <string name="template_map_car">Hartă și mașină</string>
     <string name="template_copilot">Copilot</string>
-    <string name="template_route">Traseu</string>
+    <string name="template_route">Hartă și vitezometru</string>
     <string name="template_music_radio">Muzică și radio</string>
     <string name="template_vertical_map">Vertical cu hartă</string>
     <string name="template_map_background">Hartă pe fundal</string>
     <string name="templates_tab_map">Hartă</string>
     <string name="templates_map_help">Harta în timp real cu poziția ta și următorul viraj.</string>
     <string name="designs">Stiluri</string>
-    <string name="designs_help">O atingere setează aranjamentul, fundalul, culorile, harta și mașina. Toate gratuite; apoi schimbi ce vrei.</string>
+    <string name="designs_help">Fiecare setează aranjarea, fundalul, culorile, harta și mașina. Toate gratuite; apoi schimbi ce vrei.</string>
     <string name="design_title">Stil</string>
     <string name="design_none">Niciunul încă</string>
     <string name="design_change">Schimbă</string>

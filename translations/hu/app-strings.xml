@@ -135,14 +135,14 @@
     <string name="templates_wallpaper_help">A háttérfotód néhány kártyával és lebegő órával. A hátteret az elrendezésnél → Háttérkép, vagy a Beállítások → Kezdőképernyő és megjelenés → Kezdőképernyő menüben választhatod ki.</string>
     <string name="template_map_car">Térkép és autó</string>
     <string name="template_copilot">Navigátor</string>
-    <string name="template_route">Útvonal</string>
+    <string name="template_route">Térkép és sebességmérő</string>
     <string name="template_music_radio">Zene és rádió</string>
     <string name="template_vertical_map">Álló térképpel</string>
     <string name="template_map_background">Térkép háttérként</string>
     <string name="templates_tab_map">Térkép</string>
     <string name="templates_map_help">Az élő térkép a helyzeteddel és a következő kanyarral.</string>
     <string name="designs">Stílusok</string>
-    <string name="designs_help">Egy érintés beállítja az elrendezést, a hátteret, a színeket, a térképet és az autót. Mind ingyenes; utána bármit módosíthatsz.</string>
+    <string name="designs_help">Mindegyik beállítja az elrendezést, a hátteret, a színeket, a térképet és az autót. Mind ingyenes; utána bármit módosíthatsz.</string>
     <string name="design_title">Stílus</string>
     <string name="design_none">Még nincs</string>
     <string name="design_change">Módosítás</string>

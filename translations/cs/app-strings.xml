@@ -135,14 +135,14 @@
     <string name="templates_wallpaper_help">Tvoje fotka na pozadí, pár karet navrch a plovoucí čas. Pozadí vybereš při uspořádání → Tapeta nebo v Nastavení → Plocha a vzhled → Plocha.</string>
     <string name="template_map_car">Mapa a auto</string>
     <string name="template_copilot">Spolujezdec</string>
-    <string name="template_route">Trasa</string>
+    <string name="template_route">Mapa a tachometr</string>
     <string name="template_music_radio">Hudba a rádio</string>
     <string name="template_vertical_map">Na výšku s mapou</string>
     <string name="template_map_background">Mapa na pozadí</string>
     <string name="templates_tab_map">Mapa</string>
     <string name="templates_map_help">Živá mapa s tvou polohou a další odbočkou.</string>
     <string name="designs">Styly</string>
-    <string name="designs_help">Jedním dotykem nastavíš rozvržení, pozadí, barvy, mapu i auto. Všechny zdarma; pak si změň, co chceš.</string>
+    <string name="designs_help">Každý nastaví rozložení, pozadí, barvy, mapu a auto. Všechny zdarma; potom si změníš, co chceš.</string>
     <string name="design_title">Styl</string>
     <string name="design_none">Zatím žádný</string>
     <string name="design_change">Změnit</string>

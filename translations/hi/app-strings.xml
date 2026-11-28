@@ -135,14 +135,14 @@
     <string name="templates_wallpaper_help">आपकी बैकग्राउंड फ़ोटो, ऊपर कुछ कार्ड और तैरता समय। बैकग्राउंड होम सजाएँ → वॉलपेपर में या सेटिंग्स → होम और लुक → होम में चुनें।</string>
     <string name="template_map_car">मैप और कार</string>
     <string name="template_copilot">को-पायलट</string>
-    <string name="template_route">रूट</string>
+    <string name="template_route">नक्शा और स्पीडोमीटर</string>
     <string name="template_music_radio">म्यूज़िक और रेडियो</string>
     <string name="template_vertical_map">मैप के साथ खड़ी स्क्रीन</string>
     <string name="template_map_background">पृष्ठभूमि में मैप</string>
     <string name="templates_tab_map">मैप</string>
     <string name="templates_map_help">आपकी लोकेशन और अगले मोड़ के साथ लाइव मैप।</string>
     <string name="designs">डिज़ाइन</string>
-    <string name="designs_help">एक टैप में लेआउट, बैकग्राउंड, रंग, मैप और कार सेट। सब मुफ़्त; बाद में जो चाहें बदलें।</string>
+    <string name="designs_help">हर एक लेआउट, बैकग्राउंड, रंग, नक्शा और कार सेट करता है। सब मुफ़्त; बाद में जो चाहें बदलें।</string>
     <string name="design_title">डिज़ाइन</string>
     <string name="design_none">अभी कोई नहीं</string>
     <string name="design_change">बदलें</string>

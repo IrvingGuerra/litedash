@@ -135,14 +135,14 @@
     <string name="templates_wallpaper_help">Твоє фото на фоні, кілька карток зверху і час, що ширяє. Фон вибирається під час налаштування головного екрана → «Шпалери» або в «Налаштування → Головний екран і вигляд → Головний екран».</string>
     <string name="template_map_car">Карта й авто</string>
     <string name="template_copilot">Штурман</string>
-    <string name="template_route">Маршрут</string>
+    <string name="template_route">Мапа і спідометр</string>
     <string name="template_music_radio">Музика й радіо</string>
     <string name="template_vertical_map">Вертикальний із картою</string>
     <string name="template_map_background">Карта на тлі</string>
     <string name="templates_tab_map">Карта</string>
     <string name="templates_map_help">Жива карта з твоїм місцезнаходженням і наступним поворотом.</string>
     <string name="designs">Стилі</string>
-    <string name="designs_help">Один дотик задає макет, фон, кольори, карту й авто. Усі безкоштовні; потім змінюй що хочеш.</string>
+    <string name="designs_help">Кожен задає розкладку, фон, кольори, мапу й авто. Усі безкоштовні; потім змінюйте що завгодно.</string>
     <string name="design_title">Стиль</string>
     <string name="design_none">Поки немає</string>
     <string name="design_change">Змінити</string>

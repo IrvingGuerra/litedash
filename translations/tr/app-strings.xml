@@ -135,14 +135,14 @@
     <string name="templates_wallpaper_help">Arka plan fotoğrafınız, üzerinde birkaç kart ve yüzen saatle. Arka planı düzenlerken → Duvar kağıdı’ndan veya Ayarlar → Ana ekran ve görünüm → Ana ekran’dan seçin.</string>
     <string name="template_map_car">Harita ve araba</string>
     <string name="template_copilot">Yardımcı pilot</string>
-    <string name="template_route">Güzergâh</string>
+    <string name="template_route">Harita ve hız göstergesi</string>
     <string name="template_music_radio">Müzik ve radyo</string>
     <string name="template_vertical_map">Haritalı dikey</string>
     <string name="template_map_background">Arka planda harita</string>
     <string name="templates_tab_map">Harita</string>
     <string name="templates_map_help">Konumunuz ve sonraki dönüşünüzle canlı harita.</string>
     <string name="designs">Tasarımlar</string>
-    <string name="designs_help">Tek dokunuşla düzen, arka plan, renkler, harita ve araba ayarlanır. Hepsi ücretsiz; sonra istediğinizi değiştirin.</string>
+    <string name="designs_help">Her biri düzeni, arka planı, renkleri, haritayı ve arabayı ayarlar. Hepsi ücretsiz; sonra istediğinizi değiştirin.</string>
     <string name="design_title">Tasarım</string>
     <string name="design_none">Henüz yok</string>
     <string name="design_change">Değiştir</string>

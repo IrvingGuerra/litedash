@@ -135,14 +135,14 @@
     <string name="templates_wallpaper_help">Dein Hintergrundfoto mit ein paar Kacheln darüber und schwebender Uhrzeit. Den Hintergrund wählst du beim Anordnen → Hintergrund oder unter Einstellungen → Start &amp; Aussehen → Start.</string>
     <string name="template_map_car">Karte und Auto</string>
     <string name="template_copilot">Beifahrer</string>
-    <string name="template_route">Route</string>
+    <string name="template_route">Karte und Tacho</string>
     <string name="template_music_radio">Musik und Radio</string>
     <string name="template_vertical_map">Hochformat mit Karte</string>
     <string name="template_map_background">Karte im Hintergrund</string>
     <string name="templates_tab_map">Karte</string>
     <string name="templates_map_help">Die Live-Karte mit deiner Position und der nächsten Abbiegung.</string>
     <string name="designs">Stile</string>
-    <string name="designs_help">Ein Tippen setzt Layout, Hintergrund, Farben, Karte und Auto. Alle gratis; danach änderst du, was du willst.</string>
+    <string name="designs_help">Jedes setzt Layout, Hintergrund, Farben, Karte und Auto. Alle gratis; danach änderst du, was du willst.</string>
     <string name="design_title">Stil</string>
     <string name="design_none">Noch keiner</string>
     <string name="design_change">Ändern</string>

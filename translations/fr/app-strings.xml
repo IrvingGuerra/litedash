@@ -137,14 +137,14 @@
     <string name="templates_wallpaper_help">Votre photo de fond avec quelques cartes par-dessus et l\'heure en surimpression. Le fond se choisit en organisant → Fond d\'écran ou dans Paramètres → Accueil et apparence → Accueil.</string>
     <string name="template_map_car">Carte et voiture</string>
     <string name="template_copilot">Copilote</string>
-    <string name="template_route">Itinéraire</string>
+    <string name="template_route">Carte et compteur</string>
     <string name="template_music_radio">Musique et radio</string>
     <string name="template_vertical_map">Portrait avec carte</string>
     <string name="template_map_background">Carte en fond</string>
     <string name="templates_tab_map">Carte</string>
     <string name="templates_map_help">La carte en direct avec votre position et la prochaine indication.</string>
     <string name="designs">Styles</string>
-    <string name="designs_help">Un appui règle la disposition, le fond, les couleurs, la carte et la voiture. Tous gratuits ; changez ensuite ce que vous voulez.</string>
+    <string name="designs_help">Chacun règle la disposition, le fond, les couleurs, la carte et la voiture. Tous gratuits ; ensuite, change ce que tu veux.</string>
     <string name="design_title">Style</string>
     <string name="design_none">Aucun pour l\'instant</string>
     <string name="design_change">Changer</string>

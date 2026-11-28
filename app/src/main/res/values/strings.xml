@@ -139,14 +139,14 @@
     <string name="templates_wallpaper_help">Tu foto de fondo con unas cuantas tarjetas encima y la hora flotando. El fondo se elige al acomodar → Fondo o en Ajustes → Inicio y apariencia → Inicio.</string>
     <string name="template_map_car">Mapa y auto</string>
     <string name="template_copilot">Copiloto</string>
-    <string name="template_route">Ruta</string>
+    <string name="template_route">Mapa y velocímetro</string>
     <string name="template_music_radio">Música y radio</string>
     <string name="template_vertical_map">Vertical con mapa</string>
     <string name="template_map_background">Mapa de fondo</string>
     <string name="templates_tab_map">Mapa</string>
     <string name="templates_map_help">El mapa en vivo con tu posición y la siguiente vuelta.</string>
     <string name="designs">Diseños</string>
-    <string name="designs_help">Un toque pone acomodo, fondo, colores, mapa y auto. Todos gratis; después cambias lo que quieras.</string>
+    <string name="designs_help">Cada uno pone acomodo, fondo, colores, mapa y auto. Todos gratis; después cambias lo que quieras.</string>
     <string name="design_title">Diseño</string>
     <string name="design_none">Ninguno todavía</string>
     <string name="design_change">Cambiar</string>

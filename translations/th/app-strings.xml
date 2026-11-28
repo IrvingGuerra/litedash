@@ -135,14 +135,14 @@
     <string name="templates_wallpaper_help">รูปพื้นหลังของคุณกับการ์ดไม่กี่ใบด้านบนและเวลาลอยอยู่ เลือกพื้นหลังได้ที่ จัดหน้าหลัก → วอลเปเปอร์ หรือใน การตั้งค่า → หน้าหลักและหน้าตา → หน้าหลัก</string>
     <string name="template_map_car">แผนที่และรถ</string>
     <string name="template_copilot">ผู้ช่วยนักขับ</string>
-    <string name="template_route">เส้นทาง</string>
+    <string name="template_route">แผนที่และมาตรวัดความเร็ว</string>
     <string name="template_music_radio">เพลงและวิทยุ</string>
     <string name="template_vertical_map">แนวตั้งพร้อมแผนที่</string>
     <string name="template_map_background">แผนที่เป็นพื้นหลัง</string>
     <string name="templates_tab_map">แผนที่</string>
     <string name="templates_map_help">แผนที่สดพร้อมตำแหน่งของคุณและการเลี้ยวถัดไป</string>
     <string name="designs">ดีไซน์</string>
-    <string name="designs_help">แตะครั้งเดียวได้ทั้งเลย์เอาต์ พื้นหลัง สี แผนที่ และรถ ฟรีทั้งหมด แล้วค่อยเปลี่ยนอะไรก็ได้ทีหลัง</string>
+    <string name="designs_help">แต่ละแบบจะตั้งเลย์เอาต์ พื้นหลัง สี แผนที่ และรถ ใช้ฟรีทั้งหมด จากนั้นปรับได้ตามใจ</string>
     <string name="design_title">ดีไซน์</string>
     <string name="design_none">ยังไม่มี</string>
     <string name="design_change">เปลี่ยน</string>

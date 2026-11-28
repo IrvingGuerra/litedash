@@ -135,14 +135,14 @@
     <string name="templates_wallpaper_help">Je achtergrondfoto met een paar kaarten erop en de tijd zwevend. Kies de achtergrond bij het indelen → Achtergrond of in Instellingen → Start &amp; uiterlijk → Start.</string>
     <string name="template_map_car">Kaart en auto</string>
     <string name="template_copilot">Copiloot</string>
-    <string name="template_route">Route</string>
+    <string name="template_route">Kaart en snelheidsmeter</string>
     <string name="template_music_radio">Muziek en radio</string>
     <string name="template_vertical_map">Staand met kaart</string>
     <string name="template_map_background">Kaart als achtergrond</string>
     <string name="templates_tab_map">Kaart</string>
     <string name="templates_map_help">De live kaart met je positie en volgende afslag.</string>
     <string name="designs">Stijlen</string>
-    <string name="designs_help">Eén tik zet indeling, achtergrond, kleuren, kaart en auto. Allemaal gratis; daarna pas je aan wat je wilt.</string>
+    <string name="designs_help">Elk zet de indeling, achtergrond, kleuren, kaart en auto. Allemaal gratis; daarna verander je wat je wilt.</string>
     <string name="design_title">Stijl</string>
     <string name="design_none">Nog geen</string>
     <string name="design_change">Wijzigen</string>

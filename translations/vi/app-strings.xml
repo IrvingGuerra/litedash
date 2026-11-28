@@ -135,14 +135,14 @@
     <string name="templates_wallpaper_help">Ảnh nền với vài thẻ phía trên và giờ nổi. Chọn nền trong Sắp xếp màn hình chính → Hình nền hoặc trong Cài đặt → Màn hình chính &amp; giao diện → Màn hình chính.</string>
     <string name="template_map_car">Bản đồ và xe</string>
     <string name="template_copilot">Phụ lái</string>
-    <string name="template_route">Lộ trình</string>
+    <string name="template_route">Bản đồ và đồng hồ tốc độ</string>
     <string name="template_music_radio">Nhạc và radio</string>
     <string name="template_vertical_map">Dọc với bản đồ</string>
     <string name="template_map_background">Bản đồ làm nền</string>
     <string name="templates_tab_map">Bản đồ</string>
     <string name="templates_map_help">Bản đồ trực tiếp với vị trí và lượt rẽ tiếp theo.</string>
     <string name="designs">Phong cách</string>
-    <string name="designs_help">Một chạm đặt bố cục, nền, màu, bản đồ và xe. Tất cả miễn phí; sau đó đổi gì tùy ý.</string>
+    <string name="designs_help">Mỗi kiểu đặt bố cục, hình nền, màu, bản đồ và xe. Tất cả miễn phí; sau đó đổi gì tùy bạn.</string>
     <string name="design_title">Phong cách</string>
     <string name="design_none">Chưa có</string>
     <string name="design_change">Đổi</string>

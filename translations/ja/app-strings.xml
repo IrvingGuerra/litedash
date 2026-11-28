@@ -135,14 +135,14 @@
     <string name="templates_wallpaper_help">背景写真の上にカードをいくつか置き、時刻を浮かべて表示します。背景は「ホームを編集 → 壁紙」か「設定 → ホームと外観 → ホーム」で選べます。</string>
     <string name="template_map_car">地図と車</string>
     <string name="template_copilot">コパイロット</string>
-    <string name="template_route">ルート</string>
+    <string name="template_route">マップとスピードメーター</string>
     <string name="template_music_radio">音楽とラジオ</string>
     <string name="template_vertical_map">縦向き・地図付き</string>
     <string name="template_map_background">背景に地図</string>
     <string name="templates_tab_map">地図</string>
     <string name="templates_map_help">現在地と次の曲がり角を表示するライブ地図。</string>
     <string name="designs">デザイン</string>
-    <string name="designs_help">ワンタップでレイアウト、背景、色、地図、車をまとめて設定。すべて無料で、あとから自由に変えられます。</string>
+    <string name="designs_help">それぞれがレイアウト、背景、色、マップ、車を設定します。すべて無料。あとから自由に変更できます。</string>
     <string name="design_title">デザイン</string>
     <string name="design_none">まだありません</string>
     <string name="design_change">変更</string>

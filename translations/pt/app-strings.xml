@@ -137,14 +137,14 @@
     <string name="templates_wallpaper_help">Sua foto de fundo com alguns cartões por cima e a hora flutuando. O fundo se escolhe ao organizar → Fundo ou em Configurações → Tela inicial e aparência → Início.</string>
     <string name="template_map_car">Mapa e carro</string>
     <string name="template_copilot">Copiloto</string>
-    <string name="template_route">Rota</string>
+    <string name="template_route">Mapa e velocímetro</string>
     <string name="template_music_radio">Música e rádio</string>
     <string name="template_vertical_map">Vertical com mapa</string>
     <string name="template_map_background">Mapa de fundo</string>
     <string name="templates_tab_map">Mapa</string>
     <string name="templates_map_help">O mapa ao vivo com sua posição e a próxima curva.</string>
     <string name="designs">Estilos</string>
-    <string name="designs_help">Um toque define organização, fundo, cores, mapa e carro. Todos grátis; depois mude o que quiser.</string>
+    <string name="designs_help">Cada um define layout, fundo, cores, mapa e carro. Todos grátis; depois mude o que quiser.</string>
     <string name="design_title">Estilo</string>
     <string name="design_none">Nenhum ainda</string>
     <string name="design_change">Trocar</string>
