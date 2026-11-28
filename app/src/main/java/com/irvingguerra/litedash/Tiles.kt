@@ -51,6 +51,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
+import com.irvingguerra.litedash.core.ui.floatingGlass
+import com.irvingguerra.litedash.core.ui.LocalCardLook
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Icon
@@ -523,7 +525,7 @@ internal fun PlacePills(home: String?, work: String?, onPlace: (String) -> Unit,
 private fun PlacePill(text: String, background: Color, onClick: () -> Unit) {
     val c = LocalColors.current
     Row(
-        Modifier.clip(RoundedCornerShape(50)).background(background).clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 10.dp),
+        Modifier.floatingGlass(LocalCardLook.current, c.dark, RoundedCornerShape(50), background).clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(Icons.navigate, c.accent, 14.dp)

@@ -62,6 +62,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.irvingguerra.litedash.core.ui.floatingGlass
+import com.irvingguerra.litedash.core.ui.LocalCardLook
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Icon
@@ -750,8 +752,7 @@ private fun TirePill(text: String, status: TireStatus, onClick: () -> Unit, modi
     val color = severityColor(status.severity)
     Row(
         modifier
-            .clip(RoundedCornerShape(50))
-            .background((if (color != null) color.copy(alpha = 0.18f).compositeOver(c.surface) else c.surface).copy(alpha = 0.88f))
+            .floatingGlass(LocalCardLook.current, c.dark, RoundedCornerShape(50), (if (color != null) color.copy(alpha = 0.18f).compositeOver(c.surface) else c.surface).copy(alpha = 0.88f))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,

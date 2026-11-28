@@ -12,6 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
@@ -84,6 +85,12 @@ class CardBackdrop(val image: ImageBitmap, internal val sharp: Pixels? = null, v
     /** Sus pixeles, para doblarlos en la orilla del cristal ([refracted]); se leen una vez, fuera del hilo principal. */
     internal val pixels: IntArray by lazy {
         IntArray(image.width * image.height).also { image.asAndroidBitmap().getPixels(it, 0, image.width, 0, 0, image.width, image.height) }
+    }
+
+    /** El color de la sombra que un cristal echa sobre este fondo: el suyo, muy oscuro (no un negro parejo). */
+    internal val shade: Color by lazy {
+        val mean = meanColor(image.asAndroidBitmap())
+        Color(mean.red * SHADOW_TINT, mean.green * SHADOW_TINT, mean.blue * SHADOW_TINT)
     }
 }
 
@@ -222,6 +229,16 @@ fun Modifier.skinSurface(look: CardLook, c: Colors, shape: Shape, floor: Float =
 }
 
 /**
+ * Lo que flota sobre el mapa o sobre el auto (un botón redondo, una pastilla), recortado a su [shape]: su relleno
+ * [fill] de siempre y, con la piel de vidrio, la misma orilla de luz del cristal, en fino. Con tarjetas lisas, solo
+ * el relleno.
+ */
+fun Modifier.floatingGlass(look: CardLook, dark: Boolean, shape: Shape, fill: Color): Modifier {
+    val m = clip(shape).background(fill)
+    return if (look.style == CardStyle.GLASS) m.liquidGlass(dark, shape, 1f, lit = true, GlassDepth.THIN) else m
+}
+
+/**
  * La luz de un cristal líquido, dibujada una vez por tamaño. La orilla brilla donde mira hacia la luz (arriba a la
  * izquierda) y, por el reflejo de adentro, donde mira justo al revés (abajo a la derecha); entre ellas casi se apaga
  * ([rimLight]). En un rectángulo redondeado eso es exacto con poco: cada lado recto lleva una sola fuerza y cada esquina
@@ -331,10 +348,11 @@ private fun rimStrokes(size: Size, radius: Float, width: Float, inset: Float, co
 }
 
 /**
- * La sombra de una tarjeta de cristal sobre tu fondo: unos aros que se van apagando hacia afuera, un poco caídos. Va
- * ANTES de recortar la tarjeta y solo cuando lleva tu fondo desenfocado detrás (que es opaco y tapa lo que cae adentro):
- * la sombra de Android se vería a través del cristal. Los aros se calculan una vez por tamaño ([drawWithCache]); en
- * equipos de poca memoria ([cheap]) es un solo aro.
+ * La sombra de una tarjeta de cristal sobre tu fondo: nace metida bajo la tarjeta, un poco caída, y se apaga hacia
+ * afuera sin escalones (un degradado por lado y uno por esquina, armados una vez por tamaño con [drawWithCache]); su
+ * color es el de tu fondo, muy oscuro ([CardBackdrop.shade]). Va ANTES de recortar la tarjeta y solo cuando lleva tu
+ * fondo desenfocado detrás (que es opaco y tapa lo que cae adentro): la sombra de Android se vería a través del
+ * cristal. En equipos de poca memoria ([cheap]) es un solo aro.
  */
 fun Modifier.glassShadow(look: CardLook, dark: Boolean, radius: Dp, cheap: Boolean = false): Modifier {
     if (look.style != CardStyle.GLASS) return this
@@ -343,18 +361,39 @@ fun Modifier.glassShadow(look: CardLook, dark: Boolean, radius: Dp, cheap: Boole
     if (look.backdrop == null && !onMap) return this
     return drawWithCache {
         val r = radius.toPx()
-        val rings = if (cheap) 1 else SHADOW_RINGS
-        val ring = SHADOW_SPREAD.toPx() / rings
+        val spread = SHADOW_SPREAD.toPx()
         val drop = SHADOW_DROP.toPx()
         // Nace metida bajo la tarjeta: arriba y a los lados casi no asoma, cae hacia abajo.
         val inset = SHADOW_INSET.toPx()
-        val strength = (if (dark) 0.14f else 0.075f) * (if (cheap) 0.6f else 1f)
-        val stroke = Stroke(ring + 1f)
-        val shapes = List(rings) { i ->
-            val out = ring * (i + 0.5f) - inset
-            val fade = 1f - i / rings.toFloat()
-            ShadowRing(Color.Black.copy(alpha = strength * fade * fade), Offset(-out, -out + drop), Size(size.width + 2 * out, size.height + 2 * out), CornerRadius((r + out).coerceAtLeast(0f)))
+        val w = size.width
+        val h = size.height
+        val shade = look.backdrop?.shade ?: Color.Black
+        val strength = if (dark) 0.2f else 0.1f
+        // De cada esquina: su centro queda a [k] de las orillas; hasta [inner] la sombra va entera y se apaga en [outer].
+        val k = maxOf(r, inset).coerceAtMost(minOf(w, h) / 2)
+        val inner = k - inset
+        val outer = inner + spread
+        val stops = Array(SHADOW_STOPS + 2) { i ->
+            if (i == 0) 0f to shade.copy(alpha = strength)
+            else {
+                val f = (i - 1) / SHADOW_STOPS.toFloat()
+                (inner + spread * f) / outer to shade.copy(alpha = strength * (1f - f) * (1f - f))
+            }
         }
+        val pieces = if (onMap || cheap) emptyList() else listOf(
+            // Los cuatro lados (del centro de las esquinas hacia afuera) y las cuatro esquinas.
+            ShadowPiece(Brush.verticalGradient(*stops, startY = k, endY = k - outer), Offset(k, k - outer), Size(w - 2 * k, outer)),
+            ShadowPiece(Brush.verticalGradient(*stops, startY = h - k, endY = h - k + outer), Offset(k, h - k), Size(w - 2 * k, outer)),
+            ShadowPiece(Brush.horizontalGradient(*stops, startX = k, endX = k - outer), Offset(k - outer, k), Size(outer, h - 2 * k)),
+            ShadowPiece(Brush.horizontalGradient(*stops, startX = w - k, endX = w - k + outer), Offset(w - k, k), Size(outer, h - 2 * k)),
+            ShadowPiece(Brush.radialGradient(*stops, center = Offset(k, k), radius = outer), Offset(k - outer, k - outer), Size(outer, outer)),
+            ShadowPiece(Brush.radialGradient(*stops, center = Offset(w - k, k), radius = outer), Offset(w - k, k - outer), Size(outer, outer)),
+            ShadowPiece(Brush.radialGradient(*stops, center = Offset(k, h - k), radius = outer), Offset(k - outer, h - k), Size(outer, outer)),
+            ShadowPiece(Brush.radialGradient(*stops, center = Offset(w - k, h - k), radius = outer), Offset(w - k, h - k), Size(outer, outer)),
+        )
+        // Poca memoria: un solo aro, como siempre.
+        val ring = if (cheap && !onMap) Stroke(spread + 1f) else null
+        val ringOut = spread / 2 - inset
         // El contorno oscuro que separa el cristal de un fondo claro (como el vidrio de iOS): por fuera, fino, más
         // marcado a los lados que arriba y abajo (ahí ya van la luz y la sombra).
         val edge = GLASS_EDGE.toPx()
@@ -364,13 +403,20 @@ fun Modifier.glassShadow(look: CardLook, dark: Boolean, radius: Dp, cheap: Boole
             0.88f to Color.Black.copy(alpha = edgeAlpha), 1f to Color.Black.copy(alpha = edgeAlpha * 0.42f),
         )
         onDrawBehind {
-            if (!onMap) for (s in shapes) drawRoundRect(s.color, s.at, s.size, s.corner, style = stroke)
-            drawRoundRect(edgeBrush, Offset(-edge / 2, -edge / 2), Size(size.width + edge, size.height + edge), CornerRadius(r + edge / 2), style = Stroke(edge))
+            if (pieces.isNotEmpty()) translate(0f, drop) { for (p in pieces) drawRect(p.brush, p.at, p.size) }
+            if (ring != null) {
+                drawRoundRect(
+                    Color.Black.copy(alpha = (if (dark) 0.14f else 0.075f) * 0.6f), Offset(-ringOut, -ringOut + drop),
+                    Size(w + 2 * ringOut, h + 2 * ringOut), CornerRadius((r + ringOut).coerceAtLeast(0f)), style = ring,
+                )
+            }
+            drawRoundRect(edgeBrush, Offset(-edge / 2, -edge / 2), Size(w + edge, h + edge), CornerRadius(r + edge / 2), style = Stroke(edge))
         }
     }
 }
 
-private class ShadowRing(val color: Color, val at: Offset, val size: Size, val corner: CornerRadius)
+/** Un pedazo de la sombra ya armado: su degradado y el rectángulo que pinta. */
+private class ShadowPiece(val brush: Brush, val at: Offset, val size: Size)
 
 /** ¿Equipo de poca memoria (Android lo marca así o da ≤ 128 MB por app)? Se pregunta una vez. */
 fun lowMemoryDevice(context: Context): Boolean = lowMemory ?: run {
@@ -465,6 +511,8 @@ internal fun refracted(b: CardBackdrop, at: Offset, root: Size, size: Size, radi
     val halfH = size.height / 2
     val r = radius.coerceAtMost(minOf(halfW, halfH))
     val reach = depth.coerceAtMost(minOf(halfW, halfH))
+    // En una tarjeta chica el canto no cabe entero: se empuja en proporción (si no, cruza al otro lado y repite «gotas»).
+    val shove = push * (reach / depth.coerceAtLeast(1f))
     val shade = inner.coerceAtLeast(1f)
     for (y in 0 until h) {
         val py = (y + 0.5f) / scale
@@ -491,8 +539,8 @@ internal fun refracted(b: CardBackdrop, at: Offset, root: Size, size: Size, radi
             var color = sample(src, iw, ih, (at.x + px - left) / cover - 0.5f, (at.y + py - top) / cover - 0.5f)
             if (inside < reach) {
                 val slope = LENS_PROFILE[((inside / reach).coerceIn(0f, 1f) * (LENS_PROFILE.size - 1)).toInt()]
-                val dx = -(if (px < halfW) -nx else nx) * push * slope
-                val dy = -(if (py < halfH) -ny else ny) * push * slope
+                val dx = -(if (px < halfW) -nx else nx) * shove * slope
+                val dy = -(if (py < halfH) -ny else ny) * shove * slope
                 val bent = if (fine != null) {
                     val spread = LENS_DISPERSION * slope
                     fun at(k: Float) = sample(fine.px, fine.w, fine.h, (at.x + px + dx * k - fineLeft) / fineCover - 0.5f, (at.y + py + dy * k - fineTop) / fineCover - 0.5f)
@@ -730,9 +778,11 @@ private val GLASS_EDGE = 0.7.dp
 /** En cuántos pasos se arma el degradado de la orilla en cada esquina. */
 private const val RIM_STOPS = 6
 private const val GLOW_STEPS = 3
-/** La sombra del cristal: hasta dónde llega, en cuántos aros y cuánto cae. */
+/** La sombra del cristal: hasta dónde llega, en cuántos puntos se arma su degradado y cuánto cae. */
 private val SHADOW_SPREAD = 24.dp
-private const val SHADOW_RINGS = 16
+private const val SHADOW_STOPS = 6
+/** Cuánto del color medio de tu fondo lleva la sombra (lo demás, negro). */
+private const val SHADOW_TINT = 0.22f
 private val SHADOW_DROP = 9.dp
 private val SHADOW_INSET = 6.dp
 /**

@@ -63,6 +63,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleStartEffect
+import com.irvingguerra.litedash.core.ui.floatingGlass
+import com.irvingguerra.litedash.core.ui.LocalCardLook
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Icon
@@ -634,7 +636,7 @@ internal fun sharedMapCamera(key: String?): MapCamera =
 private fun MapPill(icon: ImageVector, text: String, color: Color, maxLines: Int = 1) {
     val c = LocalColors.current
     Row(
-        Modifier.clip(RoundedCornerShape(Radius.small)).background(c.surface.copy(alpha = 0.88f)).padding(horizontal = 8.dp, vertical = 4.dp),
+        Modifier.floatingGlass(LocalCardLook.current, c.dark, RoundedCornerShape(Radius.small), c.surface.copy(alpha = 0.88f)).padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {

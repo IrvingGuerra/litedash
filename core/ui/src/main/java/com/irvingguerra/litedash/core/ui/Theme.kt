@@ -282,7 +282,10 @@ fun Card(
     Box(m) { CompositionLocalProvider(LocalColors provides inner) { content() } }
 }
 
-/** Botón redondo con ícono, objetivo táctil de 56 dp como pide el plan; [label] = lo que dice el lector de pantalla. */
+/**
+ * Botón redondo con ícono, objetivo táctil de 56 dp como pide el plan; [label] = lo que dice el lector de pantalla.
+ * Con un [background] translúcido propio (los que flotan sobre el mapa) lleva la orilla de luz del vidrio.
+ */
 @Composable
 fun IconButton(
     icon: ImageVector,
@@ -293,8 +296,12 @@ fun IconButton(
     color: Color = LocalColors.current.text,
     label: String? = null,
 ) {
+    // Con relleno translúcido es de los que flotan (sobre el mapa): lleva la orilla del cristal.
+    val floats = background.alpha > 0f && background.alpha < 1f && background != LocalColors.current.surfaceHigh
+    val look = LocalCardLook.current
     Box(
-        modifier.size(size).clip(CircleShape).background(background).clickable(role = Role.Button, onClick = onClick)
+        modifier.size(size).then(if (floats) Modifier.floatingGlass(look, LocalColors.current.dark, CircleShape, background) else Modifier.clip(CircleShape).background(background))
+            .clickable(role = Role.Button, onClick = onClick)
             .then(if (label != null) Modifier.semantics { contentDescription = label } else Modifier),
         contentAlignment = Alignment.Center,
     ) { Icon(icon, color, size * 0.45f) }

@@ -57,6 +57,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.irvingguerra.litedash.core.ui.floatingGlass
+import com.irvingguerra.litedash.core.ui.LocalCardLook
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.IconButton
@@ -609,7 +611,7 @@ internal fun GuidePill(d: Dependencies, session: DriveSession, onClick: () -> Un
     val status = guideStatus(session)
     rememberMinute()
     Row(
-        modifier.widthIn(max = PILL_MAX_WIDTH).clip(RoundedCornerShape(50)).background(c.surface.copy(alpha = CARD_ALPHA))
+        modifier.widthIn(max = PILL_MAX_WIDTH).floatingGlass(LocalCardLook.current, c.dark, RoundedCornerShape(50), c.surface.copy(alpha = CARD_ALPHA))
             .clickable(role = Role.Button, onClick = onClick).padding(start = 5.dp, end = 16.dp, top = 5.dp, bottom = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),

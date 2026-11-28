@@ -20,6 +20,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.irvingguerra.litedash.core.ui.floatingGlass
+import com.irvingguerra.litedash.core.ui.LocalCardLook
 import com.irvingguerra.litedash.core.ui.LocalColors
 
 /**
@@ -34,7 +36,7 @@ internal fun CompassButton(
     val c = LocalColors.current
     val label = stringResource(if (northUp) R.string.map_heading else R.string.map_north_up)
     Box(
-        modifier.size(size).clip(CircleShape).background(background)
+        modifier.size(size).floatingGlass(LocalCardLook.current, c.dark, CircleShape, background)
             .clickable(role = Role.Button, onClick = onClick).semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
