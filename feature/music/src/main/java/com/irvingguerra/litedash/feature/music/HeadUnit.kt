@@ -9,7 +9,7 @@ import android.content.SharedPreferences
  * prueba de la primera a la última). Se reconoce por los paquetes del sistema instalados, nunca por el
  * nombre del modelo. [GENERIC] = Bluetooth de Android sin chip propio (la mayoría): no lleva recetas.
  * Lo de la radio de fábrica de cada marca vive en su perfil ([FactoryRadio]) y cómo se reconoce y se abre, en
- * [FactoryRadioKind] ([factoryRadios]); las listas de avisos de la canción, en [BroadcastMeta]. El motor de la música no
+ * [FactoryRadioKind] ([factoryRadios]); sus apps de Bluetooth, en los perfiles [FactoryBluetoothKind]; las listas de avisos de la canción, en [BroadcastMeta]. El motor de la música no
  * nombra marcas: pregunta aquí.
  */
 internal enum class HeadUnit(
@@ -137,28 +137,3 @@ private object TopWayKind : FactoryRadioKind(TopWayRadio.PACKAGE, HeadUnit.TOPWA
     override fun describe(context: Context, store: SharedPreferences, linked: String?, profile: FactoryRadio?, bluetoothRecipe: String?) =
         TopWayRadio.describe(store, profile as? TopWayRadio, bluetoothRecipe).takeIf { TopWayRadio.available }
 }
-
-/** Una app de Bluetooth de marca (chip propio, no el de Android): [music] = la que toca la música del celular. */
-private class BrandBluetooth(val pkg: String, val family: HeadUnit, val music: Boolean = true)
-
-/**
- * Una sola lista (antes `KNOWN_BT` y `BRAND_BT_APPS`), en el orden de prioridad de siempre; las nuevas (NWD,
- * Jancar, Reglink) al final, según las estadísticas de 315 pantallas (2026-11-13).
- */
-private val BRAND_BLUETOOTH = listOf(
-    BrandBluetooth(HeadUnit.FYT_BLUETOOTH, HeadUnit.FYT),
-    BrandBluetooth("com.syu.ms", HeadUnit.FYT, music = false),
-    BrandBluetooth("com.fyt.bt", HeadUnit.FYT, music = false),
-    BrandBluetooth(HeadUnit.TOPWAY_BLUETOOTH, HeadUnit.TOPWAY),
-    BrandBluetooth("com.tw.service", HeadUnit.TOPWAY, music = false),
-    BrandBluetooth("com.ts.bt", HeadUnit.TOPWAY, music = false),
-    BrandBluetooth("com.microntek.bt", HeadUnit.MICRONTEK),
-    BrandBluetooth("com.clw.btmusic", HeadUnit.CLINKWAY),
-    // Goodocom (gocsdk) y YF Tech son módulos que usan varias marcas: dicen que hay chip propio, no la familia.
-    BrandBluetooth("com.goodocom.gocsdk", HeadUnit.GENERIC, music = false),
-    BrandBluetooth("com.autochips.bluetooth", HeadUnit.AUTOCHIPS),
-    BrandBluetooth("com.yftech.service.bluetooth", HeadUnit.GENERIC, music = false),
-    BrandBluetooth("com.nwd.bt.music", HeadUnit.NWD),
-    BrandBluetooth("com.jancar.bluetooth", HeadUnit.JANCAR),
-    BrandBluetooth("com.reglink.apps.bluetooth", HeadUnit.REGLINK),
-)

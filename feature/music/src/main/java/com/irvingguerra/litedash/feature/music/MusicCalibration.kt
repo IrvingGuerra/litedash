@@ -21,12 +21,12 @@ internal fun MusicRepository.calibrateBluetooth() {
     // El celular ya suena por el Bluetooth de Android y Android tiene el audio: no hay nada que calibrar
     // (reporte E3F104: "plain no suena" con la sesión de com.android.bluetooth sonando).
     if (avrcpController?.playbackState?.state == PlaybackState.STATE_PLAYING && musicActive()) return trace("calibración bt: ya suena por Android")
-    val available = headUnit.bluetoothRecipes.filter { btRecipes[it]?.available() == true }
+    val available = bluetoothKind.recipes.filter { btRecipes[it]?.available() == true }
     if (btCalibration.play(available, catalog?.bluetooth)) return
     // Nada funcionó antes: la receta de la marca de todos modos (lo que se hacía antes de calibrar);
     // sin receta de marca, nada que probar.
     if (btStore.saved?.id == Recipes.FAILED && !btCalibration.pending) {
-        headUnit.bluetoothRecipes.firstOrNull { it in Recipes.BRAND && btRecipes[it]?.available() == true }?.let(::useBluetooth)
+        bluetoothKind.recipes.firstOrNull { it in Recipes.BRAND && btRecipes[it]?.available() == true }?.let(::useBluetooth)
     }
 }
 

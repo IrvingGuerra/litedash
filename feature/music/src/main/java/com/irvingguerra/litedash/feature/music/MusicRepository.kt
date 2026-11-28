@@ -269,6 +269,9 @@ class MusicRepository(internal val context: Context) {
     /** La familia de la pantalla (por sus paquetes instalados): sus recetas de sonido. */
     internal val headUnit: HeadUnit by lazy { HeadUnit.of(context) }
 
+    /** El perfil de Bluetooth de fábrica de esta pantalla ([FactoryBluetoothKind]; sin uno de marca, el genérico). */
+    internal val bluetoothKind: FactoryBluetoothKind by lazy { FactoryBluetoothKind.forFamily(headUnit) }
+
     /**
      * La app de Bluetooth de marca sin receptor del botón de play ni servicio de música (se pregunta en otro hilo al
      * aparecer la música y al enlazar otra); null = tiene por dónde o no hay. Ver [phoneOnly].
