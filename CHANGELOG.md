@@ -4,6 +4,23 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.29] - 2026-11-28
+
+El vidrio, más fino, y widgets que aprovechan su espacio.
+
+### Cambiado
+- **Velocímetro y medidores** (estilos Esfera y Degradado): el arco llena su widget, sin hueco abajo ni arriba, y el
+  aro ya no se ve delgado en tamaños chicos y medianos.
+- **Clima** en un widget alto: los próximos días van en lista, con su máxima y su mínima.
+- **Taller:** el anillo de salud crece con el widget.
+- **Teléfono y Android Auto / CarPlay** en grande: el ícono crece y va al centro con su nombre.
+- **Vidrio:** la sombra de cada tarjeta es más suave y toma el color de tu fondo; los botones redondos y las
+  pastillas sobre el mapa llevan la misma orilla de luz que las tarjetas.
+
+### Arreglado
+- Con fondos de mucho detalle, el canto del vidrio dejaba manchas repetidas en la orilla.
+- Sobre el mapa de fondo, los nombres de las calles ya no cruzan las tarjetas.
+
 ## [1.5.28] - 2026-11-27
 
 Vidrio nuevo y fotos de paisaje en los Diseños.

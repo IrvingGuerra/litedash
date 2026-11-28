@@ -3,6 +3,23 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.29] - 2026-11-28
+
+Finer glass, and widgets that use their space.
+
+### Changed
+- **Speedometer and gauges** (Dial and Gradient styles): the arc fills its widget, with no gap below or above, and the
+  ring no longer looks thin at small and medium sizes.
+- **Weather** in a tall widget: the next days go in a list, with their high and low.
+- **Workshop:** the health ring grows with the widget.
+- **Phone and Android Auto / CarPlay** when large: the icon grows and sits in the center with its name.
+- **Glass:** each card's shadow is softer and takes the color of your wallpaper; round buttons and pills over the map
+  get the same light rim as the cards.
+
+### Fixed
+- With very detailed wallpapers, the glass edge left repeated blotches along the rim.
+- Over the map background, street names no longer run across the cards.
+
 ## [1.5.28] - 2026-11-27
 
 New glass and landscape photos in the Designs.
