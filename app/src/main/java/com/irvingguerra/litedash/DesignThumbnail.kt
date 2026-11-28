@@ -49,6 +49,14 @@ import com.irvingguerra.litedash.feature.map.ROUTE_BLUE
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import kotlin.math.roundToInt
 
 /**
  * Los colores con que se dibuja la miniatura de un Diseño: su tema y tarjetas ([ui]), el haz de su fondo (base y dos
@@ -83,7 +91,7 @@ internal class DesignColors(val ui: Colors, val base: Color, val glowA: Color, v
 }
 
 /**
- * La miniatura de un Diseño en esta pantalla ([grid]): su fondo (el haz de sus colores o, en Ruta, el mapa), sus
+ * La miniatura de un Diseño en esta pantalla ([grid]): su fondo (su foto; sin internet, el haz de sus colores; en Ruta, el mapa), sus
  * tarjetas con su piel y, en cada una, un dibujo sencillo de su widget (mapa con calles y ruta, el auto, el velocímetro,
  * la música, la hora, el clima). Lo de un módulo apagado no sale ([DashboardState.hidden]; se lee aquí para que cambie
  * al prenderlo o apagarlo).
@@ -94,10 +102,26 @@ internal fun DesignThumbnail(design: Design, grid: Grid, dashboard: DashboardSta
     val tiles = remember(design, grid, off) { design.template.tiles(grid, skip = { it in off }) }
     val colors = remember(design) { DesignColors.of(design) }
     val text = rememberTextMeasurer()
+    // Su foto de verdad (la miniatura del sitio, 1–7 KB, se baja una vez); sin internet, el haz de sus colores.
+    val context = LocalContext.current
+    val photo by produceState<ImageBitmap?>(null, design.wallpaper) {
+        value = design.wallpaper?.let { wallpaperThumb(context, currentWallpaper(it)) }
+    }
     Canvas(modifier.fillMaxWidth().aspectRatio(grid.columns.toFloat() / grid.rows).clip(RoundedCornerShape(Radius.inner))) {
         val k = colors
+        val image = photo
         if (design.template.mapBackground) drawMap(Rect(Offset.Zero, size), k, route = true)
-        else {
+        else if (image != null) {
+            // Cubre la miniatura sin deformarse, con el velo leve que lleva el fondo en el inicio.
+            val s = maxOf(size.width / image.width, size.height / image.height)
+            val w = image.width * s
+            val h = image.height * s
+            drawImage(
+                image, dstOffset = IntOffset(((size.width - w) / 2).roundToInt(), ((size.height - h) / 2).roundToInt()),
+                dstSize = IntSize(w.roundToInt(), h.roundToInt()), filterQuality = FilterQuality.Medium,
+            )
+            drawRect(k.ui.background.copy(alpha = 0.18f))
+        } else {
             drawRect(k.base)
             drawRect(Brush.radialGradient(listOf(k.glowA, Color.Transparent), Offset(size.width * 0.15f, 0f), size.width * 0.7f))
             drawRect(Brush.radialGradient(listOf(k.glowB, Color.Transparent), Offset(size.width * 0.9f, size.height), size.width * 0.75f))
