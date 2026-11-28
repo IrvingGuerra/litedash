@@ -3,6 +3,24 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.28] - 2026-11-27
+
+New glass and landscape photos in the Designs.
+
+### New
+- **Real glass:** the edge of every card bends your wallpaper like thick glass, with a hint of color, and the rim shines
+  depending on where the light comes from. It shows best over a photo rather than a plain background.
+- **Glass thickness** (Settings → Home & look → Interface → Cards): Thin, Medium or Thick.
+- **Landscape photos in the Designs:** Graphite, Cloud, Track and Neon come with a photo that shows off the glass, one for
+  day and one for night. If you already had a Design applied, your wallpaper doesn't change: apply it again to get the
+  photo. The previous wallpapers are still in the gallery.
+
+### Changed
+- In light theme, glass cards show more of the wallpaper and lift off it with a soft shadow.
+- Over the map background, cards get their light rim.
+- The Designs gallery shows each one with its photo.
+- On low-memory screens the glass doesn't bend the wallpaper, but it does get the new light and outline.
+
 ## [1.5.27] - 2026-11-27
 
 Bluetooth music fixes and clearer names.

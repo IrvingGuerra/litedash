@@ -4,6 +4,24 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.28] - 2026-11-27
+
+Vidrio nuevo y fotos de paisaje en los Diseños.
+
+### Nuevo
+- **Vidrio de verdad:** el canto de cada tarjeta dobla tu fondo como un cristal grueso, con un filo de color, y la
+  orilla brilla según de dónde viene la luz. Se nota más con una foto que con un fondo liso.
+- **Grosor del vidrio** (Ajustes → Inicio y apariencia → Interfaz → Tarjetas): Fino, Medio o Grueso.
+- **Fotos de paisaje en los Diseños:** Grafito, Nube, Pista y Neón traen una foto que luce el cristal, una de día y
+  otra de noche. Si ya tenías un Diseño puesto, tu fondo no cambia: vuelve a aplicarlo para tomar la foto. Los fondos
+  de antes siguen en la galería.
+
+### Cambiado
+- En tema claro las tarjetas de vidrio dejan ver más el fondo y se despegan de él con una sombra suave.
+- Sobre el mapa de fondo, las tarjetas llevan su orilla de luz.
+- La galería de Diseños muestra cada uno con su foto.
+- En pantallas de poca memoria el vidrio no dobla el fondo, pero sí lleva la luz y el contorno nuevos.
+
 ## [1.5.27] - 2026-11-27
 
 Arreglos de la música por Bluetooth y nombres más claros.
