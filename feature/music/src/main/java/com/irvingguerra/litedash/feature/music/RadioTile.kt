@@ -53,6 +53,8 @@ fun RadioTile(
         skip = skip,
         onOpen = onOpen,
         // Estación siguiente o anterior, como sus botones.
+        onNext = { repo.radio.next() },
+        onPrevious = { repo.radio.previous() },
     )
 }
 

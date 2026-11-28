@@ -14,9 +14,10 @@ import kotlin.math.abs
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
- * Deslizar a lo ancho sobre una carátula en grande: a la izquierda [onLeft], a la derecha [onRight], desde [SWIPE_MIN].
- * Solo si va más a lo ancho que a lo alto; un toque sigue siendo toque. Sin [onLeft] o [onRight], nada. Siempre llama
- * las últimas acciones. En los widgets del inicio no se usa: ahí deslizar cambia de página.
+ * Deslizar a lo ancho sobre un widget: a la izquierda [onLeft], a la derecha [onRight], desde [SWIPE_MIN]. Solo si empieza
+ * antes del "dejar presionado" (acomodar el widget) y va más a lo ancho que a lo alto; un toque sigue siendo toque. El gesto
+ * se queda con el dedo (no cambia de página el inicio ni lo toma quien está debajo); si algo de adentro ya lo usó (la
+ * música que pasa de canción), no hace nada. Sin [onLeft] o [onRight], nada. Siempre llama las últimas acciones.
  */
 @Composable
 fun Modifier.horizontalSwipe(onLeft: (() -> Unit)?, onRight: (() -> Unit)?): Modifier {

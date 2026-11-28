@@ -104,8 +104,8 @@ fun Dashboard(
     val currentOnChange by rememberUpdatedState(onChange)
     val currentLimits by rememberUpdatedState(limits)
     val currentOnTapEmpty by rememberUpdatedState(onTapEmpty)
-    // Deslizar a lo ancho cambia de página desde un hueco o desde cualquier widget que no use ese gesto (el mapa y tu
-    // auto sí lo usan y se lo quedan: les llega primero).
+    // Deslizar a lo ancho cambia de página desde un hueco o desde cualquier widget que no use ese gesto (el mapa, tu
+    // auto y, para cambiar de canción o estación, Música y Radio sí lo usan y se lo quedan: les llega primero; #13).
     val pageSwipe = if (swipe != null && !editing) Modifier.pointerInput(swipe) {
         detectHorizontalDragGestures(onDragEnd = swipe.onEnd, onDragCancel = swipe.onEnd) { change, dx ->
             change.consume()

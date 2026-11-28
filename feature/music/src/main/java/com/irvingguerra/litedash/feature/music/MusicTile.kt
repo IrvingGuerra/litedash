@@ -53,6 +53,8 @@ fun MusicTile(
         skip = skip,
         onOpen = onOpen,
         tinted = true,
+        onNext = { repo.next() },
+        onPrevious = { repo.previous() },
     )
 }
 
