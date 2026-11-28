@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Divider
 import com.irvingguerra.litedash.core.ui.Button
@@ -338,9 +339,10 @@ fun HealthTile(d: Dependencies, showCar: Boolean = true, onClick: () -> Unit) {
                 Spacer(Modifier.height(8.dp))
                 BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
                     // Angosto y alto: el anillo arriba y el texto abajo, centrados (a un lado no cabía y se cortaba).
-                    val narrowRing = minOf(maxWidth * 0.62f, maxHeight * 0.55f, 130.dp)
+                    val narrowRing = minOf(maxWidth * 0.8f, maxHeight * 0.55f, RING_MAX)
                     val narrowHeight = maxHeight
-                    if (maxWidth < 220.dp) return@BoxWithConstraints Column(
+                    // Más alto que ancho, igual: con el anillo a un lado quedaba chico y con hueco arriba y abajo.
+                    if (maxWidth < 220.dp || maxHeight > maxWidth) return@BoxWithConstraints Column(
                         Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
@@ -352,10 +354,13 @@ fun HealthTile(d: Dependencies, showCar: Boolean = true, onClick: () -> Unit) {
                         if (roomy) Label(stringResource(R.string.health_engine), Typography.subtitle.copy(textAlign = TextAlign.Center), maxLines = 1)
                         Label(line, Typography.small.copy(textAlign = TextAlign.Center), if (codes != null && codes > 0) scoreColor else c.textMuted, maxLines = if (roomy) 2 else 1)
                     }
-                    val ring = minOf(maxHeight, maxWidth * 0.4f, 130.dp)
                     val carWidth = maxHeight * CAR_TOP_ASPECT
                     // El auto solo si al texto le quedan al menos 150 dp.
-                    val withCar = showCar && maxWidth - ring - carWidth - 28.dp >= 150.dp
+                    fun carFits(ring: Dp) = showCar && maxWidth - ring - carWidth - 28.dp >= 150.dp
+                    // El anillo crece con el widget, pero no a costa del auto: si con el grande ya no cabe, el de antes.
+                    val grown = minOf(maxHeight, maxWidth * 0.4f, RING_MAX)
+                    val ring = if (!carFits(grown) && carFits(minOf(grown, 130.dp))) minOf(grown, 130.dp) else grown
+                    val withCar = carFits(ring)
                     Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                         HealthRing(score, scoreColor, Modifier.size(ring))
                         Column(Modifier.padding(horizontal = 14.dp).weight(1f)) {
@@ -373,6 +378,9 @@ fun HealthTile(d: Dependencies, showCar: Boolean = true, onClick: () -> Unit) {
         }
     }
 }
+
+/** Lo más que crece el anillo de salud en el widget. */
+private val RING_MAX = 190.dp
 
 /** El anillo de salud: trazo grueso hasta [score] (0 a 1) y el porcentaje en medio; sin datos, gris y "—". */
 @Composable

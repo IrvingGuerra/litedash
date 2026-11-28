@@ -202,6 +202,19 @@ fun WeatherTile(repo: WeatherRepository, days: Boolean = true, range: Boolean = 
                     Icon(iconOf(sky, w.day), c.accent, (height * 0.22f).coerceIn(32.dp, 56.dp))
                 }
                 Label(detail, Typography.small, c.textMuted, maxLines = 1)
+                // Alto: los próximos días en lista, uno por renglón con su máxima y mínima, repartidos en lo que sobra
+                // (en un renglón abajo quedaba un hueco grande en medio).
+                val rows = ((height - LIST_TOP) / LIST_ROW).toInt().coerceAtMost(nextDays.size)
+                if (rows >= LIST_MIN_ROWS) {
+                    Column(Modifier.fillMaxWidth().weight(1f).padding(top = 8.dp), verticalArrangement = Arrangement.SpaceEvenly) {
+                        for (d in nextDays.take(rows)) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Label(dayName(d.date), Typography.body, c.textMuted, maxLines = 1, modifier = Modifier.weight(1f))
+                            Icon(iconOf(skyOf(d.code), true), c.text, 22.dp)
+                            Label(stringResource(R.string.weather_range, d.max, d.min), Typography.body, maxLines = 1)
+                        }
+                    }
+                    return@BoxWithConstraints
+                }
                 // Lo de hoy junto arriba; los próximos días, abajo.
                 Spacer(Modifier.weight(1f))
                 // Los próximos días en renglón, si hay lugar (a lo ancho cabe uno por cada ~80 dp).
@@ -217,6 +230,11 @@ fun WeatherTile(repo: WeatherRepository, days: Boolean = true, range: Boolean = 
         }
     }
 }
+
+/** La lista de días del widget alto: lo que ocupa lo de hoy arriba, el alto de cada renglón y desde cuántos se usa. */
+private val LIST_TOP = 130.dp
+private val LIST_ROW = 40.dp
+private const val LIST_MIN_ROWS = 3
 
 /** Un día del pronóstico en una fila: nombre, ícono y máxima, uno sobre otro. */
 @Composable
