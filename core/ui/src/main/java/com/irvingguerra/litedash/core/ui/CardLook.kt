@@ -217,7 +217,8 @@ fun Modifier.skinSurface(look: CardLook, c: Colors, shape: Shape, floor: Float =
     val through = 1f - fill
     return m.background(Color.White.copy(alpha = frost(c.dark) * through))
         .background(tint)
-        .liquidGlass(c.dark, shape, through, lit = look.clear && look.backdrop != null, look.depth)
+        // Sobre tu fondo o sobre el mapa (el inicio), la luz entera: ahí el cristal es lo que se luce.
+        .liquidGlass(c.dark, shape, through, lit = look.backdrop != null || !look.clear, look.depth)
 }
 
 /**
@@ -336,7 +337,10 @@ private fun rimStrokes(size: Size, radius: Float, width: Float, inset: Float, co
  * equipos de poca memoria ([cheap]) es un solo aro.
  */
 fun Modifier.glassShadow(look: CardLook, dark: Boolean, radius: Dp, cheap: Boolean = false): Modifier {
-    if (look.style != CardStyle.GLASS || look.backdrop == null || !look.clear) return this
+    if (look.style != CardStyle.GLASS) return this
+    // Sobre el mapa de fondo, solo el contorno (la sombra se vería a través del ahumado).
+    val onMap = !look.clear
+    if (look.backdrop == null && !onMap) return this
     return drawWithCache {
         val r = radius.toPx()
         val rings = if (cheap) 1 else SHADOW_RINGS
@@ -360,7 +364,7 @@ fun Modifier.glassShadow(look: CardLook, dark: Boolean, radius: Dp, cheap: Boole
             0.88f to Color.Black.copy(alpha = edgeAlpha), 1f to Color.Black.copy(alpha = edgeAlpha * 0.42f),
         )
         onDrawBehind {
-            for (s in shapes) drawRoundRect(s.color, s.at, s.size, s.corner, style = stroke)
+            if (!onMap) for (s in shapes) drawRoundRect(s.color, s.at, s.size, s.corner, style = stroke)
             drawRoundRect(edgeBrush, Offset(-edge / 2, -edge / 2), Size(size.width + edge, size.height + edge), CornerRadius(r + edge / 2), style = Stroke(edge))
         }
     }
